@@ -144,6 +144,10 @@ namespace Clothing_shop_v2.Controllers
                 if (!result.Success)
                 {
                     ModelState.AddModelError("", result.Message);
+                    ViewBag.Categories = _context.Categories
+                    .Include(c => c.ParentCategory)
+                    .Select(c => CategoryMapping.EntityToVModel(c))
+                    .ToList();
                     return View(model);
                 }
 
@@ -186,6 +190,11 @@ namespace Clothing_shop_v2.Controllers
                     catch (Exception ex)
                     {
                         ModelState.AddModelError("", "Đã xảy ra lỗi khi đồng bộ giỏ hàng. Vui lòng kiểm tra lại.");
+                        // Load lại Categories khi có lỗi đồng bộ giỏ hàng
+                        ViewBag.Categories = _context.Categories
+                            .Include(c => c.ParentCategory)
+                            .Select(c => CategoryMapping.EntityToVModel(c))
+                            .ToList();
                     }
                     // Điều hướng sau khi login
                     if (result.Role == "Admin")
@@ -202,7 +211,11 @@ namespace Clothing_shop_v2.Controllers
                     }
                 }
             }
-
+            // Load Categories khi ModelState không valid
+            ViewBag.Categories = _context.Categories
+                .Include(c => c.ParentCategory)
+                .Select(c => CategoryMapping.EntityToVModel(c))
+                .ToList();
             return View(model);
         }
 
