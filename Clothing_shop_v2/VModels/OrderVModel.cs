@@ -5,6 +5,11 @@ namespace Clothing_shop_v2.VModels
     public class OrderCreateVModel
     {
         public int? UserId { get; set; }
+        public string? GuestFullName { get; set; }
+
+        public string? GuestEmail { get; set; }
+
+        public string? GuestPhoneNumber { get; set; }
 
         public DateTime OrderDate { get; set; }
 

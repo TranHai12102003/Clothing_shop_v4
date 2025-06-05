@@ -43,6 +43,9 @@ namespace Clothing_shop_v2.Mappings
             var order = new Order
             {
                 UserId = orderCreateVModel.UserId,
+                GuestFullName = orderCreateVModel.GuestFullName,
+                GuestEmail = orderCreateVModel.GuestEmail,
+                GuestPhoneNumber = orderCreateVModel.GuestPhoneNumber,
                 OrderDate = orderCreateVModel.OrderDate,
                 TotalAmount = orderCreateVModel.TotalAmount,
                 Status = orderCreateVModel.Status,
