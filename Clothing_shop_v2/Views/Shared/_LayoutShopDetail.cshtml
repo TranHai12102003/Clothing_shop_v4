@@ -1,0 +1,100 @@
+﻿@using System.Text.Json
+@model Clothing_shop_v2.VModels.ProductDetailVModel
+@* @model Clothing_shop_v2.VModels.ShopDetail.ShopDetailVModel *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>EShopper - @Model.ProductName</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="@Model.ProductName" name="keywords">
+    <meta content="@Model.Description" name="description">
+    <!-- Favicon -->
+    <link href="~/img/favicon.ico" rel="icon">
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <!-- Libraries Stylesheet -->
+    <link href="~/lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="~/css/style.css" rel="stylesheet">
+</head>
+<body>
+    @RenderBody()
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/easing/easing.min.js"></script>
+    <script src="~/lib/owlcarousel/owl.carousel.min.js"></script>
+
+    <!-- Template Javascript -->
+    <script src="~/js/main.js"></script>
+    <script>
+        $(document).ready(function () {
+            var variants = @Html.Raw(JsonSerializer.Serialize(Model.Variants.Select(v => new
+            {
+                SizeId = v.Size.Id,
+                SizeName = v.Size.Name,
+                ColorId = v.Color.Id,
+                ColorName = v.Color.Name
+            })));
+
+            console.log('Variants:', variants);
+
+            function updateColorOptions(sizeId) {
+                var sizeIdNum = parseInt(sizeId);
+                var availableColors = variants.filter(v => v.SizeId === sizeIdNum);
+                console.log('SizeId:', sizeIdNum, 'Available Colors:', availableColors);
+                $('#color-options').empty();
+                if (availableColors.length > 0) {
+                    availableColors.forEach(function (color) {
+                        var radioHtml = `
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" class="custom-control-input color-radio" id="color-${color.ColorId}" name="color" value="${color.ColorId}">
+                                <label class="custom-control-label" for="color-${color.ColorId}">${color.ColorName}</label>
+                            </div>`;
+                        $('#color-options').append(radioHtml);
+                    });
+                    $('#color-options .color-radio:first').prop('checked', true).trigger('change');
+                } else {
+                    $('#color-options').html('<p>No colors available for this size.</p>');
+                }
+            }
+
+            $('.size-radio').change(function () {
+                var selectedSizeId = $(this).val();
+                $('#selected-size').val(selectedSizeId);
+                updateColorOptions(selectedSizeId);
+            });
+
+            $(document).on('change', '.color-radio', function () {
+                var selectedColorId = $(this).val();
+                $('#selected-color').val(selectedColorId);
+            });
+
+            // $('.btn-plus').click(function () {
+            //     var input = $('#quantity');
+            //     var value = parseInt(input.val()) || 1 ;
+            //     input.val(value);
+            //     $('#selected-quantity').val(value);
+            // });
+            // $('.btn-minus').click(function () {
+            //     var input = $('#quantity');
+            //     var value = parseInt(input.val()) || 1;
+            //     if (value > 1) {
+            //         input.val(value);
+            //         $('#selected-quantity').val(value);
+            //     }
+            // });
+
+            if ($('.size-radio').length > 0) {
+                $('.size-radio:first').prop('checked', true).trigger('change');
+            } else {
+                $('#color-options').html('<p>No sizes available.</p>');
+            }
+        });
+    </script>
+</body>
+</html>

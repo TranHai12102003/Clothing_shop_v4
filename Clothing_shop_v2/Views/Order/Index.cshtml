@@ -1,0 +1,738 @@
+﻿@using System.Globalization
+@model Clothing_shop_v2.Common.Models.PaginationModel<Clothing_shop_v2.VModels.OrderGetVModel>
+
+@{
+    ViewData["Title"] = "Danh sách đơn hàng";
+    Layout = "_LayoutAdmin";
+}
+
+<div class="card-body">
+    <!-- Hiển thị thông báo thành công hoặc lỗi -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="header">
+        <h1>Danh sách đơn hàng</h1>
+        <span class="results">@Model.TotalRecords/@Model.TotalRecords kết quả</span>
+    </div>
+
+    <div class="actions">
+        <a asp-action="Create" class="btn create-btn"><i class="fas fa-plus"></i> TẠO MỚI</a>
+        <a asp-action="ExportToExcel" 
+           asp-route-searchString="@Context.Request.Query["FullName"]" 
+           asp-route-status="@Context.Request.Query["Status"]"
+           asp-route-email="@Context.Request.Query["Email"]"
+           asp-route-phone="@Context.Request.Query["Phone"]"
+           asp-route-pageSize="@Model.PageSize" class="btn export-btn">
+            <i class="fas fa-arrow-down me-2"></i>XUẤT FILE
+        </a>
+    </div>
+
+    <!-- Bộ lọc nâng cao -->
+    <div class="filter-section">
+        <form asp-action="Index" method="get" class="filter-form">
+            <div class="filter-row">
+                <!-- Tìm kiếm tên khách hàng -->
+                <div class="filter-group">
+                    <label class="filter-label">Tên khách hàng:</label>
+                    <input type="text" name="FullName" class="filter-input" 
+                           placeholder="Nhập tên khách hàng..." 
+                           value="@Context.Request.Query["FullName"]">
+                </div>
+                
+                <!-- Lọc theo trạng thái -->
+                <div class="filter-group">
+                    <label class="filter-label">Trạng thái:</label>
+                    <select name="Status" class="filter-select">
+                        <option value="">Tất cả trạng thái</option>
+                        @{
+                            var statuses = new[] { 
+                                new { Value = "Pending", Text = "Chờ xử lý" },
+                                new { Value = "Confirmed", Text = "Đã xác nhận" },
+                                new { Value = "Processing", Text = "Đang xử lý" },
+                                new { Value = "Shipping", Text = "Đang giao hàng" },
+                                new { Value = "Delivered", Text = "Đã giao hàng" },
+                                new { Value = "Cancelled", Text = "Đã hủy" }
+                            };
+                        }
+                        @foreach (var status in statuses)
+                        {
+                            if (Context.Request.Query["Status"] == status.Value)
+                            {
+                                <option value="@status.Value" selected>@status.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@status.Value">@status.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            
+            <div class="filter-row">
+                <!-- Lọc theo email -->
+                <div class="filter-group">
+                    <label class="filter-label">Email:</label>
+                    <input type="email" name="Email" class="filter-input" 
+                           placeholder="Nhập email khách hàng..." 
+                           value="@Context.Request.Query["Email"]">
+                </div>
+                
+                <!-- Lọc theo số điện thoại -->
+                <div class="filter-group">
+                    <label class="filter-label">Số điện thoại:</label>
+                    <input type="text" name="Phone" class="filter-input" 
+                           placeholder="Nhập số điện thoại..." 
+                           value="@Context.Request.Query["Phone"]">
+                </div>
+            </div>
+            
+            <!-- Nút thao tác -->
+            <div class="filter-actions">
+                <button type="submit" class="btn filter-btn">
+                    <i class="fas fa-search"></i> TÌM KIẾM
+                </button>
+                <a asp-action="Index" asp-route-pageSize="@Model.PageSize" class="btn clear-btn">
+                    <i class="fas fa-times"></i> XÓA BỘ LỌC
+                </a>
+            </div>
+        </form>
+        
+        <!-- Hiển thị bộ lọc đang áp dụng -->
+        @if (!string.IsNullOrEmpty(Context.Request.Query["FullName"]) || 
+             !string.IsNullOrEmpty(Context.Request.Query["Status"]) ||
+             !string.IsNullOrEmpty(Context.Request.Query["Email"]) ||
+             !string.IsNullOrEmpty(Context.Request.Query["Phone"]))
+        {
+            <div class="active-filters">
+                <span class="filter-title">Bộ lọc đang áp dụng:</span>
+                @if (!string.IsNullOrEmpty(Context.Request.Query["FullName"]))
+                {
+                    <span class="filter-tag">
+                        Tên: @Context.Request.Query["FullName"]
+                        <a asp-action="Index" 
+                           asp-route-Status="@Context.Request.Query["Status"]"
+                           asp-route-Email="@Context.Request.Query["Email"]"
+                           asp-route-Phone="@Context.Request.Query["Phone"]"
+                           asp-route-pageSize="@Model.PageSize" class="remove-filter">×</a>
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(Context.Request.Query["Status"]))
+                {
+                    <span class="filter-tag">
+                        Trạng thái: @Context.Request.Query["Status"]
+                        <a asp-action="Index" 
+                           asp-route-FullName="@Context.Request.Query["FullName"]"
+                           asp-route-Email="@Context.Request.Query["Email"]"
+                           asp-route-Phone="@Context.Request.Query["Phone"]"
+                           asp-route-pageSize="@Model.PageSize" class="remove-filter">×</a>
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(Context.Request.Query["Email"]))
+                {
+                    <span class="filter-tag">
+                        Email: @Context.Request.Query["Email"]
+                        <a asp-action="Index" 
+                           asp-route-FullName="@Context.Request.Query["FullName"]"
+                           asp-route-Status="@Context.Request.Query["Status"]"
+                           asp-route-Phone="@Context.Request.Query["Phone"]"
+                           asp-route-pageSize="@Model.PageSize" class="remove-filter">×</a>
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(Context.Request.Query["Phone"]))
+                {
+                    <span class="filter-tag">
+                        SĐT: @Context.Request.Query["Phone"]
+                        <a asp-action="Index" 
+                           asp-route-FullName="@Context.Request.Query["FullName"]"
+                           asp-route-Status="@Context.Request.Query["Status"]"
+                           asp-route-Email="@Context.Request.Query["Email"]"
+                           asp-route-pageSize="@Model.PageSize" class="remove-filter">×</a>
+                    </span>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Bao bọc bảng trong một div để thêm thanh cuộn ngang -->
+    <div class="table-wrapper">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>ID đơn hàng</th>
+                    <th>Ngày đặt hàng</th>
+@*                     <th>Khách hàng</th>
+                    <th>Email</th>
+                    <th>Số điện thoại</th> *@
+                    <th>Tổng tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Địa chỉ giao hàng</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Records.Any())
+                {
+                    foreach (var order in Model.Records)
+                    {
+                        <tr>
+                            <td>@order.Id</td>
+                            <td>@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@order.TotalAmount.ToString("C", CultureInfo.GetCultureInfo("vi-VN"))</td>
+                            <td>
+                                <form asp-action="UpdateStatus" method="post" class="d-inline status-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@order.Id" />
+                                    <select name="status" class="form-select status-select" data-order-id="@order.Id" onchange="updateOrderStatus(this)">
+                                        @{
+                                            var statusOptions = new[] { "Pending", "Confirmed", "Processing", "Shipping", "Delivered", "Cancelled" };
+                                        }
+                                        @foreach (var status in statusOptions)
+                                        {
+                                            if (status == order.Status)
+                                            {
+                                                <option value="@status" selected>@status</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@status">@status</option>
+                                            }
+                                        }
+                                    </select>
+                                </form>
+                            </td>
+                            <td>@(order.ShippingAddress ?? "Không có địa chỉ")</td>
+                            <td class="actions-cell">
+                                <a asp-action="Details" asp-controller="Order" asp-route-id="@order.Id" class="btn action-btn"><img src="~/img/8666788_info_information_icon (2).png" /></a>
+                                <button type="button" class="btn action-btn status" data-bs-toggle="modal" data-bs-target="#deleteModal-@order.Id">✖️</button>
+
+                                <!-- Delete Modal -->
+                                <div class="modal fade" id="deleteModal-@order.Id" tabindex="-1" aria-labelledby="deleteModalLabel-@order.Id" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title" id="deleteModalLabel-@order.Id">Xác nhận xóa</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Bạn chắc chắn muốn xóa đơn hàng ID "@order.Id"?
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                <form asp-action="Delete" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@order.Id" />
+                                                    <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center text-muted">Không có đơn hàng nào.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Phân trang -->
+    <div class="pagination">
+        <span>Rows per page:</span>
+        <form asp-action="Index" method="get" class="d-inline">
+            <input type="hidden" name="FullName" value="@Context.Request.Query["FullName"]" />
+            <input type="hidden" name="Status" value="@Context.Request.Query["Status"]" />
+            <input type="hidden" name="Email" value="@Context.Request.Query["Email"]" />
+            <input type="hidden" name="Phone" value="@Context.Request.Query["Phone"]" />
+            <input type="hidden" name="pageNumber" value="1" />
+            <select name="pageSize" onchange="this.form.submit()">
+                @{
+                    var pageSizes = new[] { 5, 10, 15 };
+                    foreach (var size in pageSizes)
+                    {
+                        if (size == Model.PageSize)
+                        {
+                            <option value="@size" selected>@size</option>
+                        }
+                        else
+                        {
+                            <option value="@size">@size</option>
+                        }
+                    }
+                }
+            </select>
+        </form>
+        <span>@((Model.CurrentPage - 1) * Model.PageSize + 1)-@(Model.CurrentPage * Model.PageSize > Model.TotalRecords ? Model.TotalRecords : Model.CurrentPage * Model.PageSize) of @Model.TotalRecords</span>
+        <a class="page-btn @(Model.CurrentPage == 1 ? "disabled" : "")" 
+           asp-action="Index" 
+           asp-route-pageNumber="@(Model.CurrentPage - 1)" 
+           asp-route-pageSize="@Model.PageSize" 
+           asp-route-FullName="@Context.Request.Query["FullName"]"
+           asp-route-Status="@Context.Request.Query["Status"]"
+           asp-route-Email="@Context.Request.Query["Email"]"
+           asp-route-Phone="@Context.Request.Query["Phone"]"><</a>
+        <a class="page-btn @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")" 
+           asp-action="Index" 
+           asp-route-pageNumber="@(Model.CurrentPage + 1)" 
+           asp-route-pageSize="@Model.PageSize" 
+           asp-route-FullName="@Context.Request.Query["FullName"]"
+           asp-route-Status="@Context.Request.Query["Status"]"
+           asp-route-Email="@Context.Request.Query["Email"]"
+           asp-route-Phone="@Context.Request.Query["Phone"]">></a>
+    </div>
+
+    <!-- Debug thông tin phân trang -->
+    <div class="debug-info">
+        <p>Total Records: @Model.TotalRecords</p>
+        <p>Page Size: @Model.PageSize</p>
+        <p>Current Page: @Model.CurrentPage</p>
+        <p>Total Pages: @Model.TotalPages</p>
+    </div>
+</div>
+
+<style>
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .header .results {
+            font-size: 14px;
+            color: #888;
+        }
+
+    .actions {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+        .actions .create-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background-color: #007bff;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s ease;
+            text-decoration: none;
+        }
+
+            .actions .create-btn:hover {
+                transform: translateY(-2px);
+            }
+
+    /* Styles cho bộ lọc */
+    .filter-section {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    .filter-form {
+        width: 100%;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    .filter-input,
+    .filter-select {
+        padding: 10px 15px;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        background-color: white;
+    }
+
+        .filter-input:focus,
+        .filter-select:focus {
+            border-color: #007bff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-start;
+        margin-top: 10px;
+    }
+
+    .filter-btn,
+    .clear-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .filter-btn {
+        background-color: #007bff;
+        color: white;
+    }
+
+        .filter-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+
+    .clear-btn {
+        background-color: #6c757d;
+        color: white;
+    }
+
+        .clear-btn:hover {
+            background-color: #545b62;
+            transform: translateY(-1px);
+        }
+
+    /* Hiển thị bộ lọc đang áp dụng */
+    .active-filters {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .filter-title {
+        font-weight: 600;
+        color: #495057;
+        margin-right: 10px;
+    }
+
+    .filter-tag {
+        background-color: #007bff;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .remove-filter {
+        color: white;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+        .remove-filter:hover {
+            color: #ffcccb;
+        }
+
+    /* Thêm thanh cuộn ngang cho bảng */
+    .table-wrapper {
+        overflow-x: auto;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+        margin-top: 10px;
+    }
+
+    .table-custom {
+        width: 100%;
+        min-width: 1200px;
+        border-collapse: collapse;
+        background-color: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+        .table-custom th,
+        .table-custom td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            white-space: nowrap;
+        }
+
+        .table-custom th {
+            background-color: #f9f9f9;
+            font-weight: bold;
+        }
+
+    .actions-cell .action-btn {
+        border: none;
+        background: none;
+        cursor: pointer;
+        margin-right: 5px;
+        font-size: 16px;
+    }
+
+    .actions-cell .status {
+        color: #ff0000;
+        font-weight: bold;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-top: 20px;
+        gap: 10px;
+    }
+
+        .pagination select {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .pagination span {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .pagination .page-btn {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+            .pagination .page-btn.disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+
+    .actions .export-btn {
+        padding: 8px 20px;
+        border: 1px solid #000;
+        border-radius: 25px;
+        background-color: #fff;
+        color: #000;
+        font-size: 14px;
+        font-weight: normal;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: none;
+    }
+
+        .actions .export-btn:hover {
+            background-color: #f0f0f0;
+            color: #000;
+        }
+
+        .actions .export-btn i {
+            font-size: 14px;
+        }
+
+    /* Responsive */
+    @@media screen and (max-width: 768px) {
+        .header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+            .actions .create-btn {
+                width: 100%;
+                text-align: center;
+            }
+
+        .filter-row {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .filter-group {
+            min-width: 100%;
+        }
+
+        .filter-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .filter-btn,
+        .clear-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .active-filters {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .pagination {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+
+    .status-select {
+        border: none;
+        background: transparent;
+        font-weight: bold;
+        padding: 5px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+        .status-select:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+    .status-pending {
+        background-color: #fff3cd;
+        color: #FFA500;
+    }
+
+    .status-confirmed {
+        background-color: #d1ecf1;
+        color: #17a2b8;
+    }
+
+    .status-shipping {
+        background-color: #e2e3e5;
+        color: #20c997;
+    }
+
+    .status-delivered {
+        background-color: #d4edda;
+        color: #28a745;
+    }
+
+    .status-processing {
+        background-color: #d1ecf1;
+        color: #007bff;
+    }
+
+    .status-cancelled {
+        background-color: #f8d7da;
+        color: #dc3545;
+    }
+
+    .status-form {
+        margin: 0;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Tự động ẩn thông báo sau 3 giây
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.alert').forEach(alert => {
+                setTimeout(() => {
+                    const alertInstance = bootstrap.Alert.getOrCreateInstance(alert);
+                    if (alertInstance) alertInstance.close();
+                    else alert.remove();
+                }, 3000);
+            });
+        });
+
+        function updateOrderStatus(selectElement) {
+            const orderId = selectElement.getAttribute('data-order-id');
+            const newStatus = selectElement.value;
+
+            // Tạo form tự động submit
+            const form = selectElement.closest('form');
+            form.submit();
+        }
+
+        // Thêm CSS cho select dropdown
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusSelects = document.querySelectorAll('.status-select');
+            statusSelects.forEach(function(select) {
+                // Thêm class dựa trên trạng thái hiện tại
+                const currentStatus = select.value;
+                select.classList.remove('status-pending', 'status-confirmed', 'status-shipping', 'status-delivered', 'status-cancelled', 'status-processing');
+
+                switch(currentStatus) {
+                    case 'Pending':
+                        select.classList.add('status-pending');
+                        break;
+                    case 'Confirmed':
+                        select.classList.add('status-confirmed');
+                        break;
+                    case 'Shipping':
+                        select.classList.add('status-shipping');
+                        break;
+                    case 'Delivered':
+                        select.classList.add('status-delivered');
+                        break;
+                    case 'Processing':
+                        select.classList.add('status-processing');
+                        break;
+                    case 'Cancelled':
+                        select.classList.add('status-cancelled');
+                        break;
+                }
+            });
+        });
+    </script>
+}

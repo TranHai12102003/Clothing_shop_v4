@@ -1,0 +1,928 @@
+﻿@using System.Globalization
+@using Clothing_shop_v2.VModels
+@model Clothing_shop_v2.Common.Models.PaginationModel<Clothing_shop_v2.VModels.OrderGetVModel>
+@{
+    ViewData["Title"] = "Hồ sơ";
+    Layout = "_LayoutProfileCustomer";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>EShopper - Profile</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="Free HTML Templates" name="keywords">
+    <meta content="Free HTML Templates" name="description">
+
+    <!-- Favicon -->
+    <link href="img/favicon.ico" rel="icon">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Thêm SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Libraries Stylesheet -->
+    <link href="~/lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="~/css/style.css" rel="stylesheet">
+
+    <style>
+        .profile-sidebar {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+            .profile-sidebar .nav-link {
+                color: #333;
+                padding: 12px 20px;
+                border-bottom: 1px solid #eee;
+                transition: all 0.3s;
+            }
+
+                .profile-sidebar .nav-link:hover,
+                .profile-sidebar .nav-link.active {
+                    background-color: #f8f9fa;
+                    color: #007bff;
+                    border-left: 3px solid #007bff;
+                }
+
+                .profile-sidebar .nav-link i {
+                    margin-right: 10px;
+                    width: 16px;
+                }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+            .empty-state img {
+                max-width: 200px;
+                margin-bottom: 20px;
+                opacity: 0.6;
+            }
+
+        .user-info {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #007bff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .username {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .user-status {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .account-section {
+            padding: 20px;
+        }
+
+        .account-info {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+            .account-info h5 {
+                margin-bottom: 20px;
+                color: #333;
+            }
+
+            .account-info .info-item {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 0;
+                border-bottom: 1px solid #eee;
+            }
+
+                .account-info .info-item:last-child {
+                    border-bottom: none;
+                }
+
+                .account-info .info-item span {
+                    color: #666;
+                }
+
+                .account-info .info-item strong {
+                    color: #333;
+                }
+    </style>
+</head>
+
+<body>
+    <!-- Topbar Start -->
+    <div class="container-fluid">
+        <div class="row bg-secondary py-2 px-xl-5">
+            <div class="col-lg-6 d-none d-lg-block">
+                <div class="d-inline-flex align-items-center">
+                    <a class="text-dark" href="">FAQs</a>
+                    <span class="text-muted px-2">|</span>
+                    <a class="text-dark" href="">Help</a>
+                    <span class="text-muted px-2">|</span>
+                    <a class="text-dark" href="">Support</a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center text-lg-right">
+                <div class="d-inline-flex align-items-center">
+                    <a class="text-dark px-2" href="">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a class="text-dark px-2" href="">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a class="text-dark px-2" href="">
+                        <i class="fab fa-linkedin-in"></i>
+                    </a>
+                    <a class="text-dark px-2" href="">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a class="text-dark pl-2" href="">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="row align-items-center py-3 px-xl-5">
+            <div class="col-lg-3 d-none d-lg-block">
+                <a href="" class="text-decoration-none">
+                    <h1 class="m-0 display-5 font-weight-semi-bold"><span class="text-primary font-weight-bold border px-3 mr-1">E</span>Shopper</h1>
+                </a>
+            </div>
+            <div class="col-lg-6 col-6 text-left">
+                <form asp-controller="Shop" asp-action="Index" method="get">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="SearchString" placeholder="Search by name" value="@ViewData["CurrentFilter"]?.ToString()">
+                        <div class="input-group-append">
+                            <button type="submit" class="input-group-text bg-transparent text-primary">
+                                <i class="fa fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="col-lg-3 col-6 text-right">
+                <a href="" class="btn border">
+                    <i class="fas fa-heart text-primary"></i>
+                    <span class="badge">0</span>
+                </a>
+                <a asp-controller="Cart" asp-action="Index" class="btn border">
+                    <i class="fas fa-shopping-cart text-primary"></i>
+                    <span class="badge">0</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    <!-- Topbar End -->
+    <!-- Navbar Start -->
+    <div class="container-fluid">
+        <div class="row border-top px-xl-5">
+            <div class="col-lg-3 d-none d-lg-block">
+                <a class="btn shadow-none d-flex align-items-center justify-content-between bg-primary text-white w-100" data-toggle="collapse" href="#navbar-vertical" style="height: 65px; margin-top: -1px; padding: 0 30px;">
+                    <h6 class="m-0">DANH MỤC</h6>
+                    <i class="fa fa-angle-down text-dark"></i>
+                </a>
+                <nav class="collapse position-absolute navbar navbar-vertical navbar-light align-items-start p-0 border border-top-0 border-bottom-0 bg-light" id="navbar-vertical" style="width: calc(100% - 30px); z-index: 1;">
+                    <div class="navbar-nav w-100 overflow-hidden" style="height: 410px">
+                        @{
+                            var parentCategories = ((List<CategoryGetVModel>)ViewBag.Categories)
+                            .Where(c => c.ParentCategoryId == null && c.IsActive == true)
+                            .ToList();
+                            foreach (var parent in parentCategories)
+                            {
+                                var childCategories = ((List<CategoryGetVModel>)ViewBag.Categories)
+                                .Where(c => c.ParentCategoryId == parent.Id && c.IsActive == true)
+                                .ToList();
+                                if (childCategories.Any())
+                                {
+                                    <div class="nav-item dropdown">
+                                        <a href="#" class="nav-link" data-toggle="dropdown">@parent.CategoryName <i class="fa fa-angle-down float-right mt-1"></i></a>
+                                        <div class="dropdown-menu position-absolute bg-secondary border-0 rounded-0 w-100 m-0">
+                                            @foreach (var child in childCategories)
+                                            {
+                                                <a asp-controller="Shop" asp-action="Index" asp-route-categoryId="@child.Id" class="dropdown-item">@child.CategoryName</a>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Shop" asp-action="Index" asp-route-categoryId="@parent.Id" class="nav-item nav-link">@parent.CategoryName</a>
+                                }
+                            }
+                        }
+                    </div>
+                </nav>
+            </div>
+            <div class="col-lg-9">
+                <nav class="navbar navbar-expand-lg bg-light navbar-light py-3 py-lg-0 px-0">
+                    <a href="" class="text-decoration-none d-block d-lg-none">
+                        <h1 class="m-0 display-5 font-weight-semi-bold"><span class="text-primary font-weight-bold border px-3 mr-1">E</span>Shopper</h1>
+                    </a>
+                    <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarCollapse">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse justify-content-between" id="navbarCollapse">
+                        <div class="navbar-nav mr-auto py-0">
+                            <a href="/" class="nav-item nav-link">TRANG CHỦ</a>
+                            <a href="/Shop" class="nav-item nav-link">SẢN PHẨM</a>
+                            <a href="#" class="nav-item nav-link">TIN TỨC</a>
+                            <a href="#" class="nav-item nav-link">MIX & MATCH</a>
+                            <a href="#" class="nav-item nav-link">LIÊN HỆ</a>
+                        </div>
+                        <div class="btn-group ml-2">
+                            <button type="button" class="btn btn-sm btn-light dropdown-toggle" data-toggle="dropdown">
+                                <i class="fas fa-user"></i> @User.Identity.Name
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <a class="dropdown-item" href="#">Tài khoản của tôi</a>
+                                <a class="dropdown-item" href="#">Đơn mua</a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item text-danger" asp-action="Logout">Đăng xuất</a>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </div>
+    <!-- Navbar End -->
+    <!-- Profile Content Start -->
+    <div class="container-fluid py-5">
+        <div class="row px-xl-5">
+            <!-- Sidebar -->
+            <div class="col-lg-3 col-md-4 mb-5">
+                <div class="profile-sidebar">
+                    <!-- User Info -->
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            H
+                        </div>
+                        <div class="username">@(ViewBag.UserInfo?.FullName)</div>
+                        <div class="user-status">
+                            <i class="fas fa-edit text-muted"></i> Sửa Hồ Sơ
+                        </div>
+                    </div>
+
+                    <!-- Navigation Menu -->
+                    <nav class="nav flex-column">
+                        <a class="nav-link" href="#" onclick="showSection('notifications')">
+                            <i class="fas fa-bell"></i> Thông Báo
+                        </a>
+                        <a class="nav-link" href="#" onclick="showSection('account')">
+                            <i class="fas fa-user"></i> Tài Khoản Của Tôi
+                        </a>
+                        <a class="nav-link active" href="#" onclick="showSection('orders')">
+                            <i class="fas fa-clipboard-list"></i> Đơn Mua
+                        </a>
+                        <a class="nav-link" href="#" onclick="showSection('vouchers')">
+                            <i class="fas fa-ticket-alt"></i> Kho Voucher
+                        </a>
+                        <a class="nav-link" href="#" onclick="showSection('shopee-xu')">
+                            <i class="fas fa-coins"></i> Shopee Xu
+                        </a>
+                        <a class="nav-link" href="#" onclick="showSection('sale-event')">
+                            <i class="fas fa-percentage"></i> 6.6 Siêu Sale Giữa Năm <span class="badge badge-danger">New</span>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9 col-md-8">
+                <!-- Account Section -->
+                <div class="card" id="account-section" style="display: none;">
+                    <div class="card-body account-section">
+                        <div class="account-info">
+                            <h5>Thông Tin Tài Khoản</h5>
+                            <div class="info-item">
+                                <span>Họ và Tên:</span>
+                                <p id="display-fullname">@(ViewBag.UserInfo?.FullName ?? "Chưa cập nhật")</p>
+                            </div>
+                            <div class="info-item">
+                                <span>Giới Tính:</span>
+                                <p id="display-gender">@(ViewBag.UserInfo?.Gender == "Nam" ? "Nam" : ViewBag.UserInfo?.Gender == "Nữ" ? "Nữ" : "Chưa cập nhật")</p>
+                            </div>
+                            <div class="info-item">
+                                <span>Email:</span>
+                                <p id="display-email">@(ViewBag.UserInfo?.Email ?? "Chưa cập nhật")</p>
+                            </div>
+                            <div class="info-item">
+                                <span>Số Điện Thoại:</span>
+                                <p id="display-phone">@(ViewBag.UserInfo?.PhoneNumber ?? "Chưa cập nhật")</p>
+                            </div>
+                            <div class="info-item">
+                                <span>Địa Chỉ:</span>
+                                <p id="display-address">@(ViewBag.UserInfo?.Address ?? "Chưa cập nhật")</p>
+                            </div>
+                            <div class="text-right mt-4">
+                                <a href="#" class="btn btn-primary btn-sm" onclick="showEditProfile()">Chỉnh Sửa Thông Tin</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Profile Section -->
+                <div class="card" id="edit-profile-section" style="display: none;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0">Chỉnh Sửa Thông Tin</h5>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="showSection('account')">
+                                <i class="fas fa-arrow-left"></i> Quay lại
+                            </button>
+                        </div>
+                        <form id="editProfileForm">
+                            @Html.AntiForgeryToken()
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="fullName">Họ và Tên <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="fullName" name="FullName" required>
+                                        <span class="field-validation-error" data-valmsg-for="FullName" data-valmsg-replace="true"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="email">Email <span class="text-danger">*</span></label>
+                                        <input type="email" class="form-control" id="email" name="Email" required>
+                                        <span class="field-validation-error" data-valmsg-for="Email" data-valmsg-replace="true"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="phoneNumber">Số Điện Thoại</label>
+                                        <input type="tel" class="form-control" id="phoneNumber" name="PhoneNumber">
+                                        <span class="field-validation-error" data-valmsg-for="PhoneNumber" data-valmsg-replace="true"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="mb-2">Địa chỉ</label>
+                                <!-- Tỉnh/Thành phố -->
+                                <div class="mb-2">
+                                    <select id="province" class="form-control" required>
+                                        <option value="">Chọn Tỉnh/Thành phố</option>
+                                    </select>
+                                </div>
+                                <!-- Quận/Huyện -->
+                                <div class="mb-2">
+                                    <select id="district" class="form-control" disabled required>
+                                        <option value="">Chọn Quận/Huyện</option>
+                                    </select>
+                                </div>
+                                <!-- Phường/Xã -->
+                                <div class="mb-2">
+                                    <select id="ward" class="form-control" disabled required>
+                                        <option value="">Chọn Phường/Xã</option>
+                                    </select>
+                                </div>
+                                <!-- Địa chỉ cụ thể -->
+                                <div class="mb-2">
+                                    <input id="specificAddress" type="text" placeholder="Nhập địa chỉ cụ thể (số nhà, tên đường...)" class="form-control" />
+                                </div>
+                                <!-- Hidden field để lưu địa chỉ đầy đủ -->
+                                <input type="hidden" id="fullAddress" name="Address" />
+                                <span id="address-validation" class="field-validation-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="gender">Giới Tính</label>
+                                <div class="form-check-inline ml-3">
+                                    <input class="form-check-input" type="radio" name="Gender" id="male" value="Nam">
+                                    <label class="form-check-label" for="male">Nam</label>
+                                </div>
+                                <div class="form-check-inline">
+                                    <input class="form-check-input" type="radio" name="Gender" id="female" value="Nữ">
+                                    <label class="form-check-label" for="female">Nữ</label>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="text-right">
+                                <button type="button" class="btn btn-secondary mr-2" onclick="showSection('account')">Hủy</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Lưu Thay Đổi
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Orders Tab Navigation -->
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <ul class="nav nav-tabs card-header-tabs">
+                            <li class="nav-item">
+                                <a class="nav-link @(string.IsNullOrEmpty(ViewBag.Status) ? "active text-danger" : "text-dark")" href="@Url.Action("Profile", new { PageNumber = Model.CurrentPage, PageSize = Model.PageSize, Status = "" })">Tất cả</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewBag.Status == "Pending" ? "active text-danger" : "text-dark")" href="@Url.Action("Profile", new { PageNumber = Model.CurrentPage, PageSize = Model.PageSize, Status = "Pending" })">Chờ xác nhận</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewBag.Status == "Shipping" ? "active text-danger" : "text-dark")" href="@Url.Action("Profile", new { PageNumber = Model.CurrentPage, PageSize = Model.PageSize, Status = "Shipping" })">Vận chuyển</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewBag.Status == "Processing" ? "active text-danger" : "text-dark")" href="@Url.Action("Profile", new { PageNumber = Model.CurrentPage, PageSize = Model.PageSize, Status = "Processing" })">Chờ giao hàng</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewBag.Status == "Delivered" ? "active text-danger" : "text-dark")" href="@Url.Action("Profile", new { PageNumber = Model.CurrentPage, PageSize = Model.PageSize, Status = "Delivered" })">Hoàn thành</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewBag.Status == "Cancelled" ? "active text-danger" : "text-dark")" href="@Url.Action("Profile", new { PageNumber = Model.CurrentPage, PageSize = Model.PageSize, Status = "Cancelled" })">Đã hủy</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewBag.Status == "Trả hàng/Hoàn tiền" ? "active text-danger" : "text-dark")" href="@Url.Action("Profile", new { PageNumber = Model.CurrentPage, PageSize = Model.PageSize, Status = "Trả hàng/Hoàn tiền" })">Trả hàng/Hoàn tiền</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Orders List -->
+                    <div class="card-body">
+                        @if (Model.Records != null && Model.Records.Any())
+                        {
+                            <div class="orders-list">
+                                @foreach (var order in Model.Records)
+                                {
+                                    <div class="card mb-3">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <span>Mã đơn hàng: @(order?.Id)</span>
+                                            <span class="badge badge-primary">@(order?.Status ?? "N/A")</span>
+                                        </div>
+                                        <div class="card-body">
+                                            @if (order?.OrderDetailGetVModel != null && order.OrderDetailGetVModel.Any())
+                                            {
+                                                foreach (var detail in order.OrderDetailGetVModel)
+                                                {
+                                                    <div class="d-flex align-items-center mb-3">
+                                                        <img src="@(detail.Variant?.Product?.PrimaryImageUrl ?? "https://via.placeholder.com/60?text=No+Image")" alt="@(detail.Variant?.Product?.ProductName ?? "Sản phẩm không xác định")" class="mr-3" style="width: 60px; height: 60px; object-fit: cover;">
+                                                        <div>
+                                                            <h6 class="mb-1">@(detail.Variant?.Product?.ProductName ?? "Sản phẩm không xác định")</h6>
+                                                            <small class="text-muted">Số lượng: @(detail?.Quantity ?? 0)</small>
+                                                            <p class="mb-0">Giá: @(detail?.Variant?.Price.ToString("C", CultureInfo.GetCultureInfo("vi-VN")))</p>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <div class="text-muted text-center">Không có chi tiết đơn hàng.</div>
+                                            }
+                                            <hr />
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <small>Ngày đặt hàng: @(order?.OrderDate.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</small>
+                                                </div>
+                                                <div>
+                                                    <p>Tổng tiền: @(order?.TotalAmount > 0 ? order.TotalAmount.ToString("C", CultureInfo.GetCultureInfo("vi-VN")) : "N/A")</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer text-right">
+                                            <a href="@Url.Action("OrderDetail", "Order", new { id = order?.Id })" class="btn btn-sm btn-primary">Xem chi tiết</a>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Pagination -->
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination justify-content-center mb-3">
+                                    <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("Profile", new { PageNumber = Model.CurrentPage - 1, PageSize = Model.PageSize, Status = ViewBag.Status })" aria-label="Previous">
+                                            <span aria-hidden="true">«</span>
+                                            <span class="sr-only">Previous</span>
+                                        </a>
+                                    </li>
+                                    @for (int i = 1; i <= Math.Ceiling((double)Model.TotalRecords / Model.PageSize); i++)
+                                    {
+                                        <li class="page-item @(Model.CurrentPage == i ? "active" : "")">
+                                            <a class="page-link" href="@Url.Action("Profile", new { PageNumber = i, PageSize = Model.PageSize, Status = ViewBag.Status })">@i</a>
+                                        </li>
+                                    }
+                                    <li class="page-item @(Model.CurrentPage == Math.Ceiling((double)Model.TotalRecords / Model.PageSize) ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("Profile", new { PageNumber = Model.CurrentPage + 1, PageSize = Model.PageSize, Status = ViewBag.Status })" aria-label="Next">
+                                            <span aria-hidden="true">»</span>
+                                            <span class="sr-only">Next</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        }
+                        else
+                        {
+                            <div class="empty-state">
+                                <svg width="120" height="120" viewBox="0 0 120 120" fill="none" style="margin-bottom: 20px;">
+                                    <rect x="20" y="30" width="80" height="60" rx="4" stroke="#e0e0e0" stroke-width="2" fill="none" />
+                                    <path d="M30 45 L50 55 L90 35" stroke="#e0e0e0" stroke-width="2" fill="none" />
+                                    <circle cx="85" cy="25" r="8" stroke="#e0e0e0" stroke-width="2" fill="none" />
+                                    <path d="M81 21 L85 25 L89 21" stroke="#e0e0e0" stroke-width="2" fill="none" />
+                                </svg>
+                                <h5 class="mb-3">Chưa có đơn hàng</h5>
+                                <p class="text-muted mb-4">Bạn chưa có đơn hàng nào. Hãy bắt đầu mua sắm ngay!</p>
+                                <a href="shop.html" class="btn btn-primary">Mua sắm ngay</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Profile Content End -->
+    <!-- Footer Start -->
+    <div class="container-fluid bg-secondary text-dark mt-5 pt-5">
+        <div class="row px-xl-5 pt-5">
+            <div class="col-lg-4 col-md-12 mb-5 pr-3 pr-xl-5">
+                <a href="" class="text-decoration-none">
+                    <h1 class="mb-4 display-5 font-weight-semi-bold"><span class="text-primary font-weight-bold border border-white px-3 mr-1">E</span>Shopper</h1>
+                </a>
+                <p>Dolore erat dolor sit lorem vero amet. Sed sit lorem magna, ipsum no sit erat lorem et magna ipsum dolore amet erat.</p>
+                <p class="mb-2"><i class="fa fa-map-marker-alt text-primary mr-3"></i>123 Street, New York, USA</p>
+                <p class="mb-2"><i class="fa fa-envelope text-primary mr-3"></i>info@example.com</p>
+                <p class="mb-0"><i class="fa fa-phone-alt text-primary mr-3"></i>+012 345 67890</p>
+            </div>
+            <div class="col-lg-8 col-md-12">
+                <div class="row">
+                    <div class="col-md-4 mb-5">
+                        <h5 class="font-weight-bold text-dark mb-4">Quick Links</h5>
+                        <div class="d-flex flex-column justify-content-start">
+                            <a class="text-dark mb-2" href="index.html"><i class="fa fa-angle-right mr-2"></i>Home</a>
+                            <a class="text-dark mb-2" href="shop.html"><i class="fa fa-angle-right mr-2"></i>Our Shop</a>
+                            <a class="text-dark mb-2" href="detail.html"><i class="fa fa-angle-right mr-2"></i>Shop Detail</a>
+                            <a class="text-dark mb-2" href="cart.html"><i class="fa fa-angle-right mr-2"></i>Shopping Cart</a>
+                            <a class="text-dark mb-2" href="checkout.html"><i class="fa fa-angle-right mr-2"></i>Checkout</a>
+                            <a class="text-dark" href="contact.html"><i class="fa fa-angle-right mr-2"></i>Contact Us</a>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-5">
+                        <h5 class="font-weight-bold text-dark mb-4">Quick Links</h5>
+                        <div class="d-flex flex-column justify-content-start">
+                            <a class="text-dark mb-2" href="index.html"><i class="fa fa-angle-right mr-2"></i>Home</a>
+                            <a class="text-dark mb-2" href="shop.html"><i class="fa fa-angle-right mr-2"></i>Our Shop</a>
+                            <a class="text-dark mb-2" href="detail.html"><i class="fa fa-angle-right mr-2"></i>Shop Detail</a>
+                            <a class="text-dark mb-2" href="cart.html"><i class="fa fa-angle-right mr-2"></i>Shopping Cart</a>
+                            <a class="text-dark mb-2" href="checkout.html"><i class="fa fa-angle-right mr-2"></i>Checkout</a>
+                            <a class="text-dark" href="contact.html"><i class="fa fa-angle-right mr-2"></i>Contact Us</a>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-5">
+                        <h5 class="font-weight-bold text-dark mb-4">Newsletter</h5>
+                        <form action="">
+                            <div class="form-group">
+                                <input type="text" class="form-control border-0 py-4" placeholder="Your Name" required="required" />
+                            </div>
+                            <div class="form-group">
+                                <input type="email" class="form-control border-0 py-4" placeholder="Your Email"
+                                       required="required" />
+                            </div>
+                            <div>
+                                <button class="btn btn-primary btn-block border-0 py-3" type="submit">Subscribe Now</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row border-top border-light mx-xl-5 py-4">
+            <div class="col-md-6 px-xl-0">
+                <p class="mb-md-0 text-center text-md-left text-dark">
+                    © <a class="text-dark font-weight-semi-bold" href="#">Your Site Name</a>. All Rights Reserved. Designed
+                    by
+                    <a class="text-dark font-weight-semi-bold" href="https://htmlcodex.com">HTML Codex</a><br>
+                    Distributed By <a href="https://themewagon.com" target="_blank">ThemeWagon</a>
+                </p>
+            </div>
+            <div class="col-md-6 px-xl-0 text-center text-md-right">
+                <img class="img-fluid" src="img/payments.png" alt="">
+            </div>
+        </div>
+    </div>
+    <!-- Footer End -->
+    <!-- Back to Top -->
+    <a href="#" class="btn btn-primary back-to-top"><i class="fa fa-angle-double-up"></i></a>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/easing/easing.min.js"></script>
+    <script src="~/lib/owlcarousel/owl.carousel.min.js"></script>
+    <!-- Validation Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <!-- Template Javascript -->
+    <script src="~/js/main.js"></script>
+
+    <script>
+        // Section Management
+        function showSection(sectionName) {
+            document.querySelectorAll('.profile-sidebar .nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            const sections = ['account-section', 'edit-profile-section'];
+            const ordersCard = document.querySelector('.card:not([id])');
+            sections.forEach(id => {
+                const section = document.getElementById(id);
+                if (section) section.style.display = 'none';
+            });
+            if (ordersCard) ordersCard.style.display = 'none';
+            if (sectionName === 'account') {
+                document.getElementById('account-section').style.display = 'block';
+                document.querySelector('[onclick="showSection(\'account\')"]').classList.add('active');
+            } else if (sectionName === 'orders') {
+                ordersCard.style.display = 'block';
+                document.querySelector('[onclick="showSection(\'orders\')"]').classList.add('active');
+            } else if (sectionName === 'edit-profile') {
+                document.getElementById('edit-profile-section').style.display = 'block';
+            } else {
+                const section = document.getElementById(sectionName + '-section');
+                if (section) section.style.display = 'block';
+                const navLink = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
+                if (navLink) navLink.classList.add('active');
+            }
+        }
+
+        // Pre-populate Form and Show Edit Profile
+        function showEditProfile() {
+            const fullName = document.getElementById('display-fullname').textContent.trim();
+            const email = document.getElementById('display-email').textContent.trim();
+            const phone = document.getElementById('display-phone').textContent.trim();
+            const address = document.getElementById('display-address').textContent.trim();
+            const gender = document.getElementById('display-gender').textContent.trim();
+
+            if (fullName !== 'Chưa cập nhật') document.getElementById('fullName').value = fullName;
+            if (email !== 'Chưa cập nhật') document.getElementById('email').value = email;
+            if (phone !== 'Chưa cập nhật') document.getElementById('phoneNumber').value = phone;
+            if (gender === 'Nam') {
+                document.getElementById('male').checked = true;
+            } else if (gender === 'Nữ') {
+                document.getElementById('female').checked = true;
+            }
+
+            // Load provinces and pre-populate address
+            loadProvinces();
+            if (address !== 'Chưa cập nhật') {
+                // Parse address (assumes format: "specific address, ward, district, province")
+                const addressParts = address.split(',').map(part => part.trim());
+                if (addressParts.length === 4) {
+                    const [specificAddress, wardName, districtName, provinceName] = addressParts;
+                    document.getElementById('specificAddress').value = specificAddress;
+                    preselectAddress(provinceName, districtName, wardName);
+                } else {
+                    // Fallback: set specific address as the entire string
+                    document.getElementById('specificAddress').value = address;
+                }
+            }
+
+            showSection('edit-profile');
+        }
+
+        // Update Display Info
+        function updateDisplayInfo() {
+            const fullName = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phoneNumber').value;
+            const address = document.getElementById('fullAddress').value;
+            const gender = document.querySelector('input[name="Gender"]:checked')?.value;
+
+            document.getElementById('display-fullname').textContent = fullName || 'Chưa cập nhật';
+            document.getElementById('display-email').textContent = email || 'Chưa cập nhật';
+            document.getElementById('display-phone').textContent = phone || 'Chưa cập nhật';
+            document.getElementById('display-address').textContent = address || 'Chưa cập nhật';
+            document.getElementById('display-gender').textContent = gender || 'Chưa cập nhật';
+            document.querySelector('.username').textContent = fullName || 'Chưa cập nhật';
+        }
+
+        // Address API Functions
+        const API_BASE = 'https://provinces.open-api.vn/api';
+
+        function loadProvinces() {
+            $.ajax({
+                url: `${API_BASE}/p/`,
+                method: 'GET',
+                success: function (data) {
+                    const provinceSelect = $('#province');
+                    provinceSelect.empty().append('<option value="">Chọn Tỉnh/Thành phố</option>');
+                    data.forEach(province => {
+                        provinceSelect.append(`<option value="${province.code}" data-name="${province.name}">${province.name}</option>`);
+                    });
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Không thể tải danh sách tỉnh/thành phố.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+        }
+
+        function updateFullAddress() {
+            const specificAddress = $('#specificAddress').val().trim();
+            const wardName = $('#ward option:selected').data('name') || '';
+            const districtName = $('#district option:selected').data('name') || '';
+            const provinceName = $('#province option:selected').data('name') || '';
+            let fullAddress = '';
+            if (specificAddress) fullAddress = specificAddress;
+            if (wardName) fullAddress += (fullAddress ? ', ' : '') + wardName;
+            if (districtName) fullAddress += (fullAddress ? ', ' : '') + districtName;
+            if (provinceName) fullAddress += (fullAddress ? ', ' : '') + provinceName;
+            $('#fullAddress').val(fullAddress);
+        }
+
+        function preselectAddress(provinceName, districtName, wardName) {
+            $.ajax({
+                url: `${API_BASE}/p/`,
+                method: 'GET',
+                success: function (provinces) {
+                    const province = provinces.find(p => p.name === provinceName);
+                    if (province) {
+                        $('#province').val(province.code).trigger('change');
+                        $.ajax({
+                            url: `${API_BASE}/p/${province.code}?depth=2`,
+                            method: 'GET',
+                            success: function (data) {
+                                const district = data.districts.find(d => d.name === districtName);
+                                if (district) {
+                                    $('#district').val(district.code).trigger('change');
+                                    $.ajax({
+                                        url: `${API_BASE}/d/${district.code}?depth=2`,
+                                        method: 'GET',
+                                        success: function (data) {
+                                            const ward = data.wards.find(w => w.name === wardName);
+                                            if (ward) {
+                                                $('#ward').val(ward.code);
+                                            }
+                                            updateFullAddress();
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        }
+
+        // Address API and Form Handling
+        $(document).ready(function () {
+            // Load districts
+            $('#province').on('change', function () {
+                const provinceCode = $(this).val();
+                const districtSelect = $('#district');
+                const wardSelect = $('#ward');
+                districtSelect.empty().append('<option value="">Chọn Quận/Huyện</option>').prop('disabled', true);
+                wardSelect.empty().append('<option value="">Chọn Phường/Xã</option>').prop('disabled', true);
+                if (provinceCode) {
+                    districtSelect.addClass('loading');
+                    $.ajax({
+                        url: `${API_BASE}/p/${provinceCode}?depth=2`,
+                        method: 'GET',
+                        success: function (data) {
+                            districtSelect.removeClass('loading').prop('disabled', false);
+                            if (data.districts && data.districts.length > 0) {
+                                data.districts.forEach(district => {
+                                    districtSelect.append(`<option value="${district.code}" data-name="${district.name}">${district.name}</option>`);
+                                });
+                            }
+                            updateFullAddress();
+                        },
+                        error: function () {
+                            districtSelect.removeClass('loading');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: 'Không thể tải danh sách quận/huyện.',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    });
+                }
+                updateFullAddress();
+            });
+
+            // Load wards
+            $('#district').on('change', function () {
+                const districtCode = $(this).val();
+                const wardSelect = $('#ward');
+                wardSelect.empty().append('<option value="">Chọn Phường/Xã</option>').prop('disabled', true);
+                if (districtCode) {
+                    wardSelect.addClass('loading');
+                    $.ajax({
+                        url: `${API_BASE}/d/${districtCode}?depth=2`,
+                        method: 'GET',
+                        success: function (data) {
+                            wardSelect.removeClass('loading').prop('disabled', false);
+                            if (data.wards && data.wards.length > 0) {
+                                data.wards.forEach(ward => {
+                                    wardSelect.append(`<option value="${ward.code}" data-name="${ward.name}">${ward.name}</option>`);
+                                });
+                            }
+                            updateFullAddress();
+                        },
+                        error: function () {
+                            wardSelect.removeClass('loading');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: 'Không thể tải danh sách phường/xã.',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    });
+                }
+                updateFullAddress();
+            });
+
+            // Update full address on ward or specific address change
+            $('#ward, #specificAddress').on('change keyup', function () {
+                updateFullAddress();
+            });
+
+            // Form submission with validation
+            $('#editProfileForm').on('submit', function (e) {
+                e.preventDefault();
+                const province = $('#province').val();
+                const district = $('#district').val();
+                const ward = $('#ward').val();
+                if (!province || !district || !ward) {
+                    $('#address-validation').text('Vui lòng chọn đầy đủ thông tin địa chỉ (Tỉnh/Thành phố, Quận/Huyện, Phường/Xã)');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Thiếu thông tin',
+                        text: 'Vui lòng chọn đầy đủ thông tin địa chỉ.',
+                        confirmButtonText: 'OK'
+                    });
+                    return false;
+                }
+                updateFullAddress();
+                const formData = $(this).serialize();
+                $.ajax({
+                    url: '@Url.Action("UpdateUserAjax", "Home")',
+                    type: 'POST',
+                    data: formData,
+                    success: function (response) {
+                        if (response.success) {
+                            updateDisplayInfo();
+                            showSection('account');
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: response.message,
+                                confirmButtonText: 'OK'
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: response.message,
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Có lỗi xảy ra khi cập nhật thông tin.',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                });
+            });
+
+            // Initialize page
+            showSection('orders');
+        });
+    </script>
+</body>
+</html>

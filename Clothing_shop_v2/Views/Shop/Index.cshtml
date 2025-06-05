@@ -1,0 +1,434 @@
+﻿@using System.Globalization
+@model Clothing_shop_v2.VModels.Shop.ShopVModel
+@{
+    ViewData["Title"] = "Trang sản phẩm";
+    Layout = "_LayoutShop";
+}
+
+<!-- Topbar Start -->
+<div class="container-fluid">
+    <div class="row bg-secondary py-2 px-xl-5">
+        <div class="col-lg-6 d-none d-lg-block">
+            <div class="d-inline-flex align-items-center">
+                <a class="text-dark" href="">FAQs</a>
+                <span class="text-muted px-2">|</span>
+                <a class="text-dark" href="">Help</a>
+                <span class="text-muted px-2">|</span>
+                <a class="text-dark" href="">Support</a>
+            </div>
+        </div>
+        <div class="col-lg-6 text-center text-lg-right">
+            <div class="d-inline-flex align-items-center">
+                <a class="text-dark px-2" href="">
+                    <i class="fab fa-facebook-f"></i>
+                </a>
+                <a class="text-dark px-2" href="">
+                    <i class="fab fa-twitter"></i>
+                </a>
+                <a class="text-dark px-2" href="">
+                    <i class="fab fa-linkedin-in"></i>
+                </a>
+                <a class="text-dark px-2" href="">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                <a class="text-dark pl-2" href="">
+                    <i class="fab fa-youtube"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="row align-items-center py-3 px-xl-5">
+        <div class="col-lg-3 d-none d-lg-block">
+            <a href="" class="text-decoration-none">
+                <h1 class="m-0 display-5 font-weight-semi-bold"><span class="text-primary font-weight-bold border px-3 mr-1">E</span>Shopper</h1>
+            </a>
+        </div>
+        <div class="col-lg-6 col-6 text-left">
+            <form asp-action="Index" method="get">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="SearchString" placeholder="Search for products" value="@Context.Request.Query["SearchString"]">
+                    <div class="input-group-append">
+                        <button type="submit" class="input-group-text bg-transparent text-primary">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-lg-3 col-6 text-right">
+            <a href="" class="btn border">
+                <i class="fas fa-heart text-primary"></i>
+                <span class="badge">0</span>
+            </a>
+            <a asp-action="Index" asp-controller="Cart" class="btn border">
+                <i class="fas fa-shopping-cart text-primary"></i>
+                <span class="badge">0</span>
+            </a>
+        </div>
+    </div>
+</div>
+<!-- Topbar End -->
+<!-- Navbar Start -->
+<div class="container-fluid">
+    <div class="row border-top px-xl-5">
+        <div class="col-lg-3 d-none d-lg-block">
+            <a class="btn shadow-none d-flex align-items-center justify-content-between bg-primary text-white w-100" data-toggle="collapse" href="#navbar-vertical" style="height: 65px; margin-top: -1px; padding: 0 30px;">
+                <h6 class="m-0">DANH MỤC</h6>
+                <i class="fa fa-angle-down text-dark"></i>
+            </a>
+            <nav class="collapse position-absolute navbar navbar-vertical navbar-light align-items-start p-0 border border-top-0 border-bottom-0 bg-light" id="navbar-vertical" style="width: calc(100% - 30px); z-index: 1;">
+                <div class="navbar-nav w-100 overflow-hidden" style="height: 410px">
+                    @{
+                        var parentCategories = Model.Categories?.Where(c => c.ParentCategoryId == null && c.IsActive == true).ToList();
+                        foreach (var parent in parentCategories)
+                        {
+                            var childCategories = Model.Categories?.Where(c => c.ParentCategoryId == parent.Id && c.IsActive == true).ToList();
+                            if (childCategories.Any())
+                            {
+                                <div class="nav-item dropdown">
+                                    <a href="#" class="nav-link" data-toggle="dropdown">@parent.CategoryName <i class="fa fa-angle-down float-right mt-1"></i></a>
+                                    <div class="dropdown-menu position-absolute bg-secondary border-0 rounded-0 w-100 m-0">
+                                        @foreach (var child in childCategories)
+                                        {
+                                            <a asp-controller="Shop" asp-action="Index" asp-route-categoryId="@child.Id" class="dropdown-item">@child.CategoryName</a>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <a asp-controller="Shop" asp-action="Index" asp-route-categoryId="@parent.Id" class="nav-item nav-link">@parent.CategoryName</a>
+                            }
+                        }
+                    }
+                </div>
+            </nav>
+        </div>
+        <div class="col-lg-9">
+            <nav class="navbar navbar-expand-lg bg-light navbar-light py-3 py-lg-0 px-0">
+                <a href="" class="text-decoration-none d-block d-lg-none">
+                    <h1 class="m-0 display-5 font-weight-semi-bold"><span class="text-primary font-weight-bold border px-3 mr-1">E</span>Shopper</h1>
+                </a>
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarCollapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse justify-content-between" id="navbarCollapse">
+                    <div class="navbar-nav mr-auto py-0">
+                        <a asp-controller="Home" asp-action="Index" class="nav-item nav-link">TRANG CHỦ</a>
+                        <a asp-action="Index" class="nav-item nav-link active">SẢN PHẨM</a>
+                        @* <a href="detail.html" class="nav-item nav-link">Shop Detail</a> *@
+                        @* <div class="nav-item dropdown">
+                            <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Pages</a>
+                            <div class="dropdown-menu rounded-0 m-0">
+                                <a href="cart.html" class="dropdown-item">Shopping Cart</a>
+                                <a href="checkout.html" class="dropdown-item">Checkout</a>
+                            </div>
+                        </div> *@
+                        <a href="contact.html" class="nav-item nav-link">TIN TỨC</a>
+                        <a href="contact.html" class="nav-item nav-link">MIX & MATCH</a>
+                        <a href="contact.html" class="nav-item nav-link">LIÊN HỆ</a>
+                    </div>
+                    <div class="navbar-nav ml-auto py-0">
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Hi, @User.Identity.Name
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
+                                    <a class="dropdown-item" asp-controller="Home" asp-action="Profile">Tài Khoản</a>
+                                    <a class="dropdown-item" asp-controller="Home" asp-action="Logout">Đăng Xuất</a>
+                                </div>
+                            </li>
+                        }
+                        else
+                        {
+                            <a asp-action="Login" asp-controller="Home" class="nav-item nav-link">ĐĂNG NHẬP</a>
+                        }
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+</div>
+<!-- Navbar End -->
+<!-- Page Header Start -->
+<div class="container-fluid bg-secondary mb-5">
+    <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 300px">
+        <h1 class="font-weight-semi-bold text-uppercase mb-3">SẢN PHẨM</h1>
+        <div class="d-inline-flex">
+            <p class="m-0"><a href="">TRANG CHỦ</a></p>
+            <p class="m-0 px-2">-</p>
+            <p class="m-0">SẢN PHẨM</p>
+        </div>
+    </div>
+</div>
+<!-- Page Header End -->
+<!-- Shop Start -->
+<div class="container-fluid pt-5">
+    <div class="row px-xl-5">
+        <!-- Shop Sidebar Start -->
+        <div class="col-lg-3 col-md-12">
+            <form asp-action="Index" method="get" id="filterForm">
+                <!-- Price Start -->
+                <div class="border-bottom mb-4 pb-4">
+                    <h5 class="font-weight-semi-bold mb-4">Lọc theo giá</h5>
+                    <div class="form-group">
+                        <label for="MinPrice">Giá từ</label>
+                        <input type="number" class="form-control" id="MinPrice" name="MinPrice" step="0.01" min="0" value="@(Context.Request.Query["MinPrice"])" placeholder="Nhập giá">
+                    </div>
+                    <div class="form-group">
+                        <label for="MaxPrice">Đến giá</label>
+                        <input type="number" class="form-control" id="MaxPrice" name="MaxPrice" step="0.01" min="0" value="@(Context.Request.Query["MaxPrice"])" placeholder="Nhập giá">
+                    </div>
+                </div>
+                <!-- Price End -->
+                <!-- Color Start -->
+                <div class="border-bottom mb-4 pb-4">
+                    <h5 class="font-weight-semi-bold mb-4">Lọc theo màu</h5>
+                    <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between mb-3">
+                        <input type="checkbox" class="custom-control-input all-checkbox" id="color-all" name="color-all" value="all" @(string.IsNullOrEmpty(Context.Request.Query["ColorIds"]) ? "checked" : "")>
+                        <label class="custom-control-label" for="color-all">Tất cả màu</label>
+                        <span class="badge border font-weight-normal">1000</span>
+                    </div>
+                    @if (Model.Colors != null)
+                    {
+                        var colorQuery = Context.Request.Query["ColorIds"];
+                        var selectedColors = string.IsNullOrEmpty(colorQuery) ? new int[0] : colorQuery.ToString().Split(',').Select(int.Parse).ToArray();
+                        foreach (var color in Model.Colors)
+                        {
+                            <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between mb-3">
+                                <input type="checkbox" class="custom-control-input color-checkbox" id="color-@color.Id" name="ColorIds" value="@color.Id" @(selectedColors.Contains(color.Id) ? "checked" : "")>
+                                <label class="custom-control-label" for="color-@color.Id">@color.ColorName</label>
+                                <span class="badge border font-weight-normal">@color.Variants.Count</span>
+                            </div>
+                        }
+                    }
+                </div>
+                <!-- Color End -->
+                <!-- Size Start -->
+                <div class="mb-5">
+                    <h5 class="font-weight-semi-bold mb-4">Lọc theo kích thước</h5>
+                    <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between mb-3">
+                        <input type="checkbox" class="custom-control-input all-checkbox" id="size-all" name="size-all" value="all" @(string.IsNullOrEmpty(Context.Request.Query["SizeIds"]) ? "checked" : "")>
+                        <label class="custom-control-label" for="size-all">Tất cả kích thước</label>
+                        <span class="badge border font-weight-normal">1000</span>
+                    </div>
+                    @if (Model.Sizes != null)
+                    {
+                        var sizeQuery = Context.Request.Query["SizeIds"];
+                        var selectedSizes = string.IsNullOrEmpty(sizeQuery) ? new int[0] : sizeQuery.ToString().Split(',').Select(int.Parse).ToArray();
+                        foreach (var size in Model.Sizes)
+                        {
+                            <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between mb-3">
+                                <input type="checkbox" class="custom-control-input size-checkbox" id="size-@size.Id" name="SizeIds" value="@size.Id" @(selectedSizes.Contains(size.Id) ? "checked" : "")>
+                                <label class="custom-control-label" for="size-@size.Id">@size.SizeName</label>
+                                <span class="badge border font-weight-normal">@size.Variants.Count</span>
+                            </div>
+                        }
+                    }
+                </div>
+                <!-- Size End -->
+                <!-- Hidden inputs to preserve other parameters -->
+                <input type="hidden" name="SearchString" value="@(Context.Request.Query["SearchString"])">
+                <input type="hidden" name="CategoryId" value="@(Context.Request.Query["CategoryId"])">
+                <input type="hidden" name="sortBy" value="@(Context.Request.Query["sortBy"])">
+
+                <!-- Submit button -->
+                <button type="submit" class="btn btn-primary mb-3" style="width: 100%;">Áp dụng</button>
+            </form>
+        </div>
+        <!-- Shop Sidebar End -->
+        <!-- Shop Product Start -->
+        <div class="col-lg-9 col-md-12">
+            <div class="row pb-3">
+                <div class="col-12 pb-1">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <form asp-action="Index" method="get">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="SearchString" placeholder="Search by name" value="@Context.Request.Query["SearchString"]">
+                                <div class="input-group-append">
+                                    <button type="submit" class="input-group-text bg-transparent text-primary">
+                                        <i class="fa fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        <div class="dropdown ml-4">
+                            <button class="btn border dropdown-toggle" type="button" id="triggerId" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Sort by
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="triggerId">
+                                <a class="dropdown-item" asp-action="Index" asp-route-sortBy="latest">Latest</a>
+                                <a class="dropdown-item" asp-action="Index" asp-route-sortBy="popularity">Popularity</a>
+                                <a class="dropdown-item" asp-action="Index" asp-route-sortBy="rating">Best Rating</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @if (Model.Products?.Records != null && Model.Products.Records.Any())
+                {
+                    foreach (var product in Model.Products.Records)
+                    {
+                        <div class="col-lg-4 col-md-6 col-sm-12 pb-1">
+                            <div class="card product-item border-0 mb-4">
+                                <div class="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
+                                    <img class="img-fluid w-100" src="@product.PrimaryImageUrl" alt="@product.ProductName">
+                                </div>
+                                <div class="card-body border-left border-right text-center p-0 pt-4 pb-3">
+                                    <h6 class="text-truncate mb-3">@product.ProductName</h6>
+                                    <div class="d-flex justify-content-center">
+                                        <h6>@product.Price.ToString("C", CultureInfo.GetCultureInfo("vi-VN"))</h6>
+                                        <h6 class="text-muted ml-2"><del>@product.Price.ToString("C", CultureInfo.GetCultureInfo("vi-VN"))</del></h6>
+                                    </div>
+                                </div>
+                                <div class="card-footer d-flex justify-content-center bg-light border">
+                                    <a asp-action="Index" asp-controller="ShopDetails" asp-route-id="@product.Id" class="btn btn-sm text-dark p-0"><i class="fas fa-eye text-primary mr-1"></i>View Detail</a>
+                                    @* <a asp-action="AddToCart" asp-controller="Cart" asp-route-id="@product." class="btn btn-sm text-dark p-0"><i class="fas fa-shopping-cart text-primary mr-1"></i>Add To Cart</a> *@
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12 pb-1">
+                        <p class="text-center">No products available.</p>
+                    </div>
+                }
+                <div class="col-12 pb-1">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mb-3">
+                            <li class="page-item @(Model.Products?.CurrentPage == 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.Products?.CurrentPage - 1)" asp-route-searchString="@Context.Request.Query["SearchString"]" asp-route-categoryId="@Context.Request.Query["categoryId"]" asp-route-sortBy="@Context.Request.Query["sortBy"]" aria-label="Previous">
+                                    <span aria-hidden="true">«</span>
+                                    <span class="sr-only">Previous</span>
+                                </a>
+                            </li>
+                            @if (Model.Products != null)
+                            {
+                                @for (int i = 1; i <= Model.Products.TotalPages; i++)
+                                {
+                                    <li class="page-item @(Model.Products.CurrentPage == i ? "active" : "")">
+                                        <a class="page-link" asp-action="Index" asp-route-pageNumber="@i" asp-route-searchString="@Context.Request.Query["SearchString"]" asp-route-categoryId="@Context.Request.Query["categoryId"]" asp-route-sortBy="@Context.Request.Query["sortBy"]">@i</a>
+                                    </li>
+                                }
+                            }
+                            <li class="page-item @(Model.Products?.CurrentPage == Model.Products?.TotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.Products?.CurrentPage + 1)" asp-route-searchString="@Context.Request.Query["SearchString"]" asp-route-categoryId="@Context.Request.Query["categoryId"]" asp-route-sortBy="@Context.Request.Query["sortBy"]" aria-label="Next">
+                                    <span aria-hidden="true">»</span>
+                                    <span class="sr-only">Next</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        <!-- Shop Product End -->
+    </div>
+</div>
+<!-- Shop End -->
+<!-- Footer Start -->
+<div class="container-fluid bg-secondary text-dark mt-5 pt-5">
+    <div class="row px-xl-5 pt-5">
+        <div class="col-lg-4 col-md-12 mb-5 pr-3 pr-xl-5">
+            <a href="" class="text-decoration-none">
+                <h1 class="mb-4 display-5 font-weight-semi-bold"><span class="text-primary font-weight-bold border border-white px-3 mr-1">E</span>Shopper</h1>
+            </a>
+            <p>Dolore erat dolor sit lorem vero amet. Sed sit lorem magna, ipsum no sit erat lorem et magna ipsum dolore amet erat.</p>
+            <p class="mb-2"><i class="fa fa-map-marker-alt text-primary mr-3"></i>123 Street, New York, USA</p>
+            <p class="mb-2"><i class="fa fa-envelope text-primary mr-3"></i>info@example.com</p>
+            <p class="mb-0"><i class="fa fa-phone-alt text-primary mr-3"></i>+012 345 67890</p>
+        </div>
+        <div class="col-lg-8 col-md-12">
+            <div class="row">
+                <div class="col-md-4 mb-5">
+                    <h5 class="font-weight-bold text-dark mb-4">Quick Links</h5>
+                    <div class="d-flex flex-column justify-content-start">
+                        <a class="text-dark mb-2" href="index.html"><i class="fa fa-angle-right mr-2"></i>Home</a>
+                        <a class="text-dark mb-2" href="shop.html"><i class="fa fa-angle-right mr-2"></i>Our Shop</a>
+                        <a class="text-dark mb-2" href="detail.html"><i class="fa fa-angle-right mr-2"></i>Shop Detail</a>
+                        <a class="text-dark mb-2" href="cart.html"><i class="fa fa-angle-right mr-2"></i>Shopping Cart</a>
+                        <a class="text-dark mb-2" href="checkout.html"><i class="fa fa-angle-right mr-2"></i>Checkout</a>
+                        <a class="text-dark" href="contact.html"><i class="fa fa-angle-right mr-2"></i>Contact Us</a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-5">
+                    <h5 class="font-weight-bold text-dark mb-4">Quick Links</h5>
+                    <div class="d-flex flex-column justify-content-start">
+                        <a class="text-dark mb-2" href="index.html"><i class="fa fa-angle-right mr-2"></i>Home</a>
+                        <a class="text-dark mb-2" href="shop.html"><i class="fa fa-angle-right mr-2"></i>Our Shop</a>
+                        <a class="text-dark mb-2" href="detail.html"><i class="fa fa-angle-right mr-2"></i>Shop Detail</a>
+                        <a class="text-dark mb-2" href="cart.html"><i class="fa fa-angle-right mr-2"></i>Shopping Cart</a>
+                        <a class="text-dark mb-2" href="checkout.html"><i class="fa fa-angle-right mr-2"></i>Checkout</a>
+                        <a class="text-dark" href="contact.html"><i class="fa fa-angle-right mr-2"></i>Contact Us</a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-5">
+                    <h5 class="font-weight-bold text-dark mb-4">Newsletter</h5>
+                    <form action="">
+                        <div class="form-group">
+                            <input type="text" class="form-control border-0 py-4" placeholder="Your Name" required="required" />
+                        </div>
+                        <div class="form-group">
+                            <input type="email" class="form-control border-0 py-4" placeholder="Your Email" required="required" />
+                        </div>
+                        <div>
+                            <button class="btn btn-primary btn-block border-0 py-3" type="submit">Subscribe Now</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row border-top border-light mx-xl-5 py-4">
+        <div class="col-md-6 px-xl-0">
+            <p class="mb-md-0 text-center text-md-left text-dark">
+                © <a class="text-dark font-weight-semi-bold" href="#">Your Site Name</a>. All Rights Reserved. Designed
+                by
+                <a class="text-dark font-weight-semi-bold" href="https://htmlcodex.com">HTML Codex</a><br>
+                Distributed By <a href="https://themewagon.com" target="_blank">ThemeWagon</a>
+            </p>
+        </div>
+        <div class="col-md-6 px-xl-0 text-center text-md-right">
+            <img class="img-fluid" src="img/payments.png" alt="">
+        </div>
+    </div>
+</div>
+<!-- Footer End -->
+<!-- Back to Top -->
+<a href="#" class="btn btn-primary back-to-top"><i class="fa fa-angle-double-up"></i></a>
+
+<script>
+    document.getElementById('filterForm').addEventListener('submit', function (e) {
+        // Remove empty inputs
+        var inputs = this.querySelectorAll('input[name="MinPrice"], input[name="MaxPrice"]');
+        inputs.forEach(input => {
+            if (!input.value.trim()) {
+                input.name = ''; // Remove name to exclude from submission
+            }
+        });
+
+        // Handle "All" checkboxes
+        var colorAll = document.getElementById('color-all');
+        var sizeAll = document.getElementById('size-all');
+        var colorCheckboxes = document.querySelectorAll('.color-checkbox');
+        var sizeCheckboxes = document.querySelectorAll('.size-checkbox');
+
+        if (colorAll.checked && !Array.from(colorCheckboxes).some(cb => cb.checked)) {
+            colorAll.name = ''; // Remove name if no specific colors selected
+        }
+        if (sizeAll.checked && !Array.from(sizeCheckboxes).some(cb => cb.checked)) {
+            sizeAll.name = ''; // Remove name if no specific sizes selected
+        }
+
+        // Remove empty hidden inputs
+        var hiddenInputs = this.querySelectorAll('input[type="hidden"]');
+        hiddenInputs.forEach(input => {
+            if (!input.value.trim()) {
+                input.name = ''; // Remove name to exclude from submission
+            }
+        });
+    });
+</script>

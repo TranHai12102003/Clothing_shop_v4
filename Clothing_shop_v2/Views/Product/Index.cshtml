@@ -1,0 +1,435 @@
+﻿@model Clothing_shop_v2.Common.Models.PaginationModel<Clothing_shop_v2.VModels.ProductGetVModel>
+
+@{
+    ViewData["Title"] = "Danh sách sản phẩm";
+    Layout = "_LayoutAdmin";
+}
+
+<div class="card-body">
+    <!-- Hiển thị thông báo thành công hoặc lỗi -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="header">
+        <h1>Danh sách sản phẩm</h1>
+        <span class="results">@Model.TotalRecords/@Model.TotalRecords kết quả</span>
+    </div>
+
+    <div class="actions">
+        <a asp-action="Create" class="btn create-btn"><i class="fas fa-plus"></i> TẠO MỚI</a>
+        <a asp-action="ExportToExcel" asp-route-searchString="@Context.Request.Query["searchString"]" asp-route-pageSize="@Model.PageSize" class="btn export-btn">
+            <i class="fas fa-arrow-down me-2"></i>XUẤT FILE
+        </a>
+    </div>
+
+    <div class="search-bar">
+        <form asp-action="Index" method="get" class="search-form">
+            <div class="input-group">
+                <input type="text" name="searchString" class="search-input" placeholder="Tìm kiếm sản phẩm..." value="@Context.Request.Query["searchString"]">
+                <button type="submit" class="search-btn"><i class="fas fa-search fa-sm"></i></button>
+            </div>
+            @if (!string.IsNullOrEmpty(Context.Request.Query["searchString"]))
+            {
+                <a asp-action="Index" asp-route-pageSize="@Model.PageSize" class="clear-filter-btn">XÓA BỘ LỌC</a>
+            }
+        </form>
+    </div>
+
+    <!-- Bao bọc bảng trong một div để thêm thanh cuộn ngang -->
+    <div class="table-wrapper">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Tên sản phẩm</th>
+                    <th>Ảnh</th>
+                    <th>Danh mục</th>
+                    <th>Ngày tạo</th>
+                    <th>Ngày cập nhật</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Records.Any())
+                {
+                    int index = (Model.CurrentPage - 1) * Model.PageSize + 1;
+                    foreach (var product in Model.Records)
+                    {
+                        <tr>
+                            <td>@index</td>
+                            <td>@product.ProductName</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(product.PrimaryImageUrl))
+                                {
+                                    <img src="@product.PrimaryImageUrl" alt="@product.ProductName" class="product-image" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Không có ảnh</span>
+                                }
+                            </td>
+                            <td>@product.Category.CategoryName</td>
+                            <td>@product.CreatedDate?.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@(product.UpdatedDate?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                            <td class="actions-cell">
+                                <a asp-action="Details" asp-controller="Product" asp-route-id="@product.Id" class="btn action-btn"><img src="~/img/8666788_info_information_icon (2).png" /></a>
+                                <a asp-action="Update" asp-route-id="@product.Id" class="btn action-btn">✏️</a>
+                                <button type="button" class="btn action-btn status" data-bs-toggle="modal" data-bs-target="#deleteModal-@product.Id">✖️</button>
+
+                                <!-- Delete Modal -->
+                                <div class="modal fade" id="deleteModal-@product.Id" tabindex="-1" aria-labelledby="deleteModalLabel-@product.Id" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title" id="deleteModalLabel-@product.Id">Xác nhận xóa</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Bạn chắc chắn muốn xóa sản phẩm "@product.ProductName"?
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                <form asp-action="Delete" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@product.Id" />
+                                                    <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        index++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Không có sản phẩm nào.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Phân trang -->
+    <div class="pagination">
+        <span>Rows per page:</span>
+        <form asp-action="Index" method="get" class="d-inline">
+            <input type="hidden" name="searchString" value="@Context.Request.Query["searchString"]" />
+            <input type="hidden" name="pageNumber" value="1" />
+            <select name="pageSize" onchange="this.form.submit()">
+                @{
+                    var pageSizes = new[] { 5, 10, 15 };
+                    foreach (var size in pageSizes)
+                    {
+                        if (size == Model.PageSize)
+                        {
+                            <option value="@size" selected>@size</option>
+                        }
+                        else
+                        {
+                            <option value="@size">@size</option>
+                        }
+                    }
+                }
+            </select>
+        </form>
+        <span>@((Model.CurrentPage - 1) * Model.PageSize + 1)-@(Model.CurrentPage * Model.PageSize > Model.TotalRecords ? Model.TotalRecords : Model.CurrentPage * Model.PageSize) of @Model.TotalRecords</span>
+        <a class="page-btn @(Model.CurrentPage == 1 ? "disabled" : "")" asp-action="Index" asp-route-pageNumber="@(Model.CurrentPage - 1)" asp-route-pageSize="@Model.PageSize" asp-route-searchString="@Context.Request.Query["searchString"]"><</a>
+        <a class="page-btn @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")" asp-action="Index" asp-route-pageNumber="@(Model.CurrentPage + 1)" asp-route-pageSize="@Model.PageSize" asp-route-searchString="@Context.Request.Query["searchString"]">></a>
+    </div>
+
+    <!-- Debug thông tin phân trang -->
+    <div class="debug-info">
+        <p>Total Records: @Model.TotalRecords</p>
+        <p>Page Size: @Model.PageSize</p>
+        <p>Current Page: @Model.CurrentPage</p>
+        <p>Total Pages: @Model.TotalPages</p>
+    </div>
+</div>
+
+<style>
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .header .results {
+            font-size: 14px;
+            color: #888;
+        }
+
+    .actions {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+        .actions .create-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background-color: #007bff;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s ease;
+            text-decoration: none;
+        }
+
+            .actions .create-btn:hover {
+                transform: translateY(-2px);
+            }
+
+    .search-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+        .search-bar .search-form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .search-bar .input-group {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 10px;
+        }
+
+        .search-bar .search-input {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            flex-grow: 1;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            color: #888;
+        }
+
+        .search-bar .search-btn,
+        .search-bar .clear-filter-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            font-weight: bold;
+            transition: transform 0.1s ease;
+            text-decoration: none;
+        }
+
+            .search-bar .search-btn:hover,
+            .search-bar .clear-filter-btn:hover {
+                transform: translateY(-2px);
+            }
+
+        .search-bar .search-btn {
+            background-color: #007bff;
+            color: white;
+        }
+
+    /* Thêm thanh cuộn ngang cho bảng */
+    .table-wrapper {
+        overflow-x: auto;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table-custom {
+        width: 100%;
+        min-width: 800px;
+        border-collapse: collapse;
+        background-color: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+        .table-custom th,
+        .table-custom td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            white-space: nowrap;
+        }
+
+        .table-custom th {
+            background-color: #f9f9f9;
+            font-weight: bold;
+        }
+
+    .product-image {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+        vertical-align: middle;
+    }
+
+    .actions-cell .action-btn {
+        border: none;
+        background: none;
+        cursor: pointer;
+        margin-right: 5px;
+        font-size: 16px;
+    }
+
+    .actions-cell .status {
+        color: #ff0000;
+        font-weight: bold;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-top: 20px;
+        gap: 10px;
+    }
+
+        .pagination select {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .pagination span {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .pagination .page-btn {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+            .pagination .page-btn.disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+
+    .actions .export-btn {
+        padding: 8px 20px;
+        border: 1px solid #000;
+        border-radius: 25px; 
+        background-color: #fff; 
+        color: #000; 
+        font-size: 14px;
+        font-weight: normal; 
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: none;
+    }
+
+        .actions .export-btn:hover {
+            background-color: #f0f0f0; /* Hiệu ứng hover nhẹ (tùy chọn) */
+            color: #000; /* Giữ màu chữ khi hover */
+        }
+
+        .actions .export-btn i {
+            font-size: 14px; /* Kích thước icon bằng chữ */
+        }
+
+    /* Responsive */
+    @@media screen and (max-width: 768px) {
+        .header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+            .actions .create-btn {
+                width: 100%;
+                text-align: center;
+            }
+
+        .search-bar {
+            flex-direction: column;
+            width: 100%;
+        }
+
+            .search-bar .search-form {
+                width: 100%;
+            }
+
+            .search-bar .input-group {
+                width: 100%;
+            }
+
+            .search-bar .search-input {
+                width: 100%;
+            }
+
+            .search-bar .search-btn,
+            .search-bar .clear-filter-btn {
+                width: 100%;
+                text-align: center;
+            }
+
+        .pagination {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .product-image {
+            width: 40px;
+            height: 40px;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Tự động ẩn thông báo sau 3 giây
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.alert').forEach(alert => {
+                setTimeout(() => {
+                    const alertInstance = bootstrap.Alert.getOrCreateInstance(alert);
+                    if (alertInstance) alertInstance.close();
+                    else alert.remove();
+                }, 3000);
+            });
+        });
+    </script>
+}

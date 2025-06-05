@@ -1,0 +1,386 @@
+﻿@model Clothing_shop_v2.VModels.OrderGetVModel
+
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng";
+    Layout = "_LayoutAdmin";
+}
+
+
+<section class="order-container" role="region" aria-label="Chi tiết đơn hàng">
+    <h1>Chi tiết đơn hàng #@Model.Id</h1>
+
+    <!-- Hiển thị thông báo thành công hoặc lỗi -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="order-info">
+        <div class="field">
+            <label for="order-id">Mã đơn hàng</label>
+            <div id="order-id" class="value">@Model.Id</div>
+        </div>
+        <div class="field">
+            <label for="customer-name">Tên khách hàng</label>
+            <div id="customer-name" class="value">@(Model.User?.FullName ?? "Không xác định")</div>
+        </div>
+        <div class="field">
+            <label for="phone-number">Số điện thoại</label>
+            <div id="phone-number" class="value">@(Model.User?.PhoneNumber ?? "Không xác định")</div>
+        </div>
+        <div class="field">
+            <label for="email">Email</label>
+            <div id="email" class="value">@(Model.User?.Email ?? "Không xác định")</div>
+        </div>
+        <div class="field">
+            <label for="order-date">Ngày đặt hàng</label>
+            <div id="order-date" class="value">@Model.OrderDate.ToString("yyyy-MM-dd HH:mm")</div>
+        </div>
+        <div class="field">
+            <label for="total-amount">Tổng tiền</label>
+            <div id="total-amount" class="value">$@Model.TotalAmount.ToString("F2")</div>
+        </div>
+        <div class="field">
+            <label for="status">Trạng thái</label>
+            <div id="status" class="value">
+                <span class="status-pill @(Model.Status.ToLower() switch { "pending" => "status-pending", "completed" => "status-completed", "canceled" => "status-canceled", _ => "status-processing" })">
+                    @Model.Status
+                </span>
+            </div>
+        </div>
+        <div class="field delivery-address">
+            <label for="delivery-address">Địa chỉ giao hàng</label>
+            <div id="delivery-address" class="value">@(Model.ShippingAddress ?? "Không có địa chỉ")</div>
+        </div>
+        <div class="field">
+            <label for="payment-method">Phương thức thanh toán</label>
+            <div id="payment-method" class="value">@(Model.PaymentId.HasValue ? $"Payment ID: {Model.PaymentId}" : "Chưa thanh toán")</div>
+        </div>
+        <div class="field">
+            <label for="discount-code">Mã giảm giá</label>
+            <div id="discount-code" class="value">@(Model.VoucherId.HasValue ? $"Voucher ID: {Model.VoucherId}" : "Không có")</div>
+        </div>
+        <div class="field">
+            <label for="created-by">Người tạo</label>
+            <div id="created-by" class="value">@(Model.CreatedBy ?? "Không xác định")</div>
+        </div>
+        <div class="field">
+            <label for="created-date">Ngày tạo</label>
+            <div id="created-date" class="value">@(Model.CreatedDate?.ToString("yyyy-MM-dd HH:mm") ?? "-")</div>
+        </div>
+        <div class="field">
+            <label for="updated-by">Người cập nhật</label>
+            <div id="updated-by" class="value">@(Model.UpdatedBy ?? "Không xác định")</div>
+        </div>
+        <div class="field">
+            <label for="updated-date">Ngày cập nhật</label>
+            <div id="updated-date" class="value">@(Model.UpdatedDate?.ToString("yyyy-MM-dd HH:mm") ?? "-")</div>
+        </div>
+    </div>
+
+    <h2 style="margin-bottom: 20px; color: #2c3e50; font-family: 'Merriweather', serif;">Sản phẩm đặt hàng</h2>
+    <table class="product-list" role="table" aria-label="Danh sách sản phẩm đặt hàng">
+        <thead>
+            <tr>
+                <th scope="col">Ảnh</th>
+                <th scope="col">Sản phẩm</th>
+                <th scope="col">Kích thước</th>
+                <th scope="col">Màu sắc</th>
+                <th scope="col">Số lượng</th>
+                <th scope="col">Đơn giá</th>
+                <th scope="col">Tổng</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.OrderDetailGetVModel != null && Model.OrderDetailGetVModel.Any())
+            {
+                foreach (var detail in Model.OrderDetailGetVModel)
+                {
+                    <tr>
+                        <td data-label="Ảnh">
+                            @if (!string.IsNullOrEmpty(detail.Variant?.Product?.PrimaryImageUrl))
+                            {
+                                <img class="product-image" src="@detail.Variant.Product.PrimaryImageUrl" alt="@(detail.Variant?.Product?.ProductName ?? "Sản phẩm")" />
+                            }
+                            else
+                            {
+                                <img class="product-image" src="https://via.placeholder.com/64?text=No+Image" alt="Không có ảnh" />
+                            }
+                        </td>
+                        <td data-label="Sản phẩm">
+                            <div class="product-name-container">
+                                @(detail.Variant?.Product?.ProductName ?? "Không xác định")
+                            </div>
+                        </td>
+                        <td data-label="Kích thước">@(detail.Variant?.Size?.Name ?? "Không xác định")</td>
+                        <td data-label="Màu sắc">@(detail.Variant?.Color?.Name ?? "Không xác định")</td>
+                        <td data-label="Số lượng">@detail.Quantity</td>
+                        <td data-label="Đơn giá">$@detail.UnitPrice.ToString("F2")</td>
+                        <td data-label="Tổng">$@((detail.Quantity * detail.UnitPrice).ToString("F2"))</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 20px; color: #666;">Không có sản phẩm nào.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="actions" style="margin-top: 20px; text-align: right;">
+        <a asp-action="Index" class="btn-back">Quay lại</a>
+    </div>
+</section>
+
+<style>
+/*     body {
+        margin: 0;
+        padding: 30px 20px;
+        background-color: #f9f8f7;
+        font-family: 'Open Sans', sans-serif;
+        color: #3a3a3a;
+    } */
+
+    h1 {
+        text-align: center;
+        font-family: 'Merriweather', serif;
+        font-weight: 700;
+        font-size: 2.5rem;
+        margin-bottom: 40px;
+        color: #2c3e50;
+        letter-spacing: 0.04em;
+    }
+
+    .order-container {
+        max-width: 920px;
+        margin: 20px auto;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 8px 20px rgba(50, 50, 93, 0.12);
+        padding: 36px 48px 48px;
+        border: 1px solid #dcdcdc;
+    }
+
+    .order-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 28px 48px;
+        margin-bottom: 48px;
+    }
+
+    .field {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 12px;
+    }
+
+        .field:last-child {
+            border-bottom: none;
+        }
+
+        .field label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .field .value {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #222;
+            word-wrap: break-word;
+            line-height: 1.3;
+            font-family: 'Merriweather', serif;
+        }
+
+        .field.delivery-address {
+            grid-column: 1 / -1;
+        }
+
+    .product-list {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'Open Sans', sans-serif;
+    }
+
+        .product-list thead {
+            border-bottom: 2px solid #b8b8b9;
+        }
+
+            .product-list thead th {
+                text-align: left;
+                padding: 14px 16px;
+                font-size: 0.9rem;
+                font-weight: 700;
+                color: #444;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+            }
+
+        .product-list tbody tr {
+            border-top: 1px solid #e1e1e1;
+        }
+
+            .product-list tbody tr:last-child {
+                border-bottom: 1px solid #e1e1e1;
+            }
+
+        .product-list tbody td {
+            padding: 14px 16px;
+            vertical-align: middle;
+            font-size: 1rem;
+            color: #3a3a3a;
+        }
+
+    .product-image {
+        width: 64px;
+        height: 64px;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        object-fit: cover;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .product-name-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-weight: 700;
+        font-family: 'Merriweather', serif;
+    }
+
+    .status-pill {
+        display: inline-block;
+        padding: 7px 18px;
+        border-radius: 25px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        user-select: none;
+        color: #fff;
+        letter-spacing: 0.07em;
+    }
+
+    .status-pending {
+        background-color: #b07c12;
+    }
+
+    .status-completed {
+        background-color: #2a7b5f;
+    }
+
+    .status-canceled {
+        background-color: #9b2f2f;
+    }
+
+    .status-processing {
+        background-color: #2c5367;
+    }
+
+    .btn-back {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #2c5367;
+        color: white;
+        text-decoration: none;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: background 0.3s ease;
+    }
+
+        .btn-back:hover {
+            background: #3b6f8c;
+        }
+
+    @@media (max-width: 640px) {
+        .order-info
+
+    {
+        grid-template-columns: 1fr;
+        gap: 20px 0;
+    }
+
+    .field.delivery-address {
+        grid-column: 1 / -1;
+    }
+
+    .order-container {
+        padding: 28px 24px 32px;
+    }
+
+    .product-list thead {
+        display: none;
+    }
+
+    .product-list tbody tr {
+        display: block;
+        border: none;
+        margin-bottom: 18px;
+        background: #f5f5f5;
+        padding: 14px 12px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(44, 83, 103, 0.05);
+    }
+
+    .product-list tbody td {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 12px;
+        font-size: 0.95rem;
+        border: none;
+    }
+
+        .product-list tbody td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #666;
+        }
+
+    .product-name-container {
+        justify-content: flex-start;
+        gap: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .product-image {
+        width: 54px;
+        height: 54px;
+        border-radius: 8px;
+    }
+
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Tự động ẩn thông báo sau 3 giây
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.alert').forEach(alert => {
+                setTimeout(() => {
+                    const alertInstance = bootstrap.Alert.getOrCreateInstance(alert);
+                    if (alertInstance) alertInstance.close();
+                    else alert.remove();
+                }, 3000);
+            });
+        });
+    </script>
+}
