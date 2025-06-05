@@ -19,12 +19,14 @@ namespace Clothing_shop_v2.Controllers
         private readonly ICartService _cartService;
         private readonly IOrderService _orderService;
         private readonly IVnPayService _vnPayService;
-        public CheckoutController(ClothingShopV3Context context, ICartService cartService, IOrderService orderService, IVnPayService vpnPayService)
+        private readonly IEmailService _emailService;
+        public CheckoutController(ClothingShopV3Context context, ICartService cartService, IOrderService orderService, IVnPayService vpnPayService, IEmailService emailService)
         {
             _context = context;
             _cartService = cartService;
             _orderService = orderService;
             _vnPayService = vpnPayService;
+            _emailService = emailService;
         }
         //public async Task<IActionResult> Index()
         //{
@@ -363,6 +365,8 @@ namespace Clothing_shop_v2.Controllers
                 order.Status = "Pending";
                 _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
+                // Send order confirmation email
+                await SendOrderConfirmationEmail(order, cartItems, model);
             }
 
             // Xóa giỏ hàng sau khi đặt hàng thành công
@@ -472,6 +476,67 @@ namespace Clothing_shop_v2.Controllers
             }
 
             return RedirectToAction("Index", "Cart");
+        }
+
+        private async Task<string> LoadEmailTemplateAsync(string templatePath)
+        {
+            // Ensure the template path is valid and accessible  
+            if (!System.IO.File.Exists(templatePath))
+            {
+                throw new FileNotFoundException($"Email template not found at path: {templatePath}");
+            }
+
+            // Read the email template content from the file  
+            return await System.IO.File.ReadAllTextAsync(templatePath);
+        }
+
+        private async Task SendOrderConfirmationEmail(Order order, List<CartGetVModel> cartItems, CheckoutVModel model)
+        {
+            try
+            {
+                var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "Template", "sendmail.html");
+                var emailTemplate = await LoadEmailTemplateAsync(templatePath);
+
+                var fullName = User.Identity.IsAuthenticated ? model.FullName : model.ShippingFullName ?? "Khách hàng";
+                emailTemplate = emailTemplate.Replace("{{fullName}}", fullName);
+                emailTemplate = emailTemplate.Replace("{{orderId}}", $"#DH{order.Id.ToString("D8")}");
+                emailTemplate = emailTemplate.Replace("{{orderDate}}", order.OrderDate.ToString("dd/MM/yyyy - HH:mm"));
+                emailTemplate = emailTemplate.Replace("{{paymentMethod}}", order.Payment?.PaymentMethod ?? "COD");
+                emailTemplate = emailTemplate.Replace("{{status}}", order.Status);
+                emailTemplate = emailTemplate.Replace("{{shippingAddress}}", order.ShippingAddress);
+                emailTemplate = emailTemplate.Replace("{{phoneNumber}}", model.PhoneNumber ?? "N/A");
+                emailTemplate = emailTemplate.Replace("{{estimatedDelivery}}", "2-3 ngày làm việc");
+                emailTemplate = emailTemplate.Replace("{{shippingProvider}}", "Giao hàng nhanh");
+                emailTemplate = emailTemplate.Replace("{{trackOrderLink}}", $"https://yourshop.com/order/track/{order.Id}");
+
+                var productHtml = "";
+                foreach (var item in cartItems)
+                {
+                    productHtml += $@"
+                        <div style=""border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; background-color: #fafafa; padding: 12px; display: flex; align-items: center;"">
+                            <div style=""width: 70px; text-align: center; background-color: #e0e0e0; border-radius: 4px; color: #999; font-size: 12px; padding: 20px 10px;"">IMG</div>
+                            <div style=""flex: 1; padding-left: 15px;"">
+                                <div style=""font-weight: bold; margin-bottom: 5px; color: #333; font-size: 16px;"">{item.Variant?.Product?.ProductName ?? "Sản phẩm"}</div>
+                                <div style=""color: #666; font-size: 14px;"">Kích thước: {item.Variant?.Size?.Name ?? "N/A"} | Màu: {item.Variant?.Color?.Name ?? "N/A"} | Số lượng: {item.Quantity}</div>
+                            </div>
+                            <div style=""width: 100px; text-align: right; font-weight: bold; color: #4a90e2; font-size: 16px;"">{(item.TotalPrice):N0}₫</div>
+                        </div>";
+                }
+                emailTemplate = emailTemplate.Replace("{{productList}}", productHtml);
+
+                var subtotal = cartItems.Sum(item => item.TotalPrice);
+                emailTemplate = emailTemplate.Replace("{{subtotal}}", $"{subtotal:N0}₫");
+                emailTemplate = emailTemplate.Replace("{{shippingFee}}", "10.000₫");
+                emailTemplate = emailTemplate.Replace("{{discount}}", "0₫");
+                emailTemplate = emailTemplate.Replace("{{totalAmount}}", $"{order.TotalAmount:N0}₫");
+
+                var email = User.Identity.IsAuthenticated ? model.Email : model.ShippingEmail;
+                await _emailService.SendEmailAsync(email, "Đặt hàng thành công - Mã đơn hàng #" + order.Id.ToString("D8"), emailTemplate);
+            }
+            catch (Exception ex)
+            {
+                TempData["WarningMessage"] = "Đặt hàng thành công nhưng không thể gửi email xác nhận.";
+            }
         }
 
         //public async Task<IActionResult> OrderConfirmation(int orderId)
