@@ -512,9 +512,10 @@ namespace Clothing_shop_v2.Controllers
                 var productHtml = "";
                 foreach (var item in cartItems)
                 {
+                    string imageUrl = item.Variant?.Product?.PrimaryImageUrl ?? "https://via.placeholder.com/70";
                     productHtml += $@"
                         <div style=""border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; background-color: #fafafa; padding: 12px; display: flex; align-items: center;"">
-                            <div style=""width: 70px; text-align: center; background-color: #e0e0e0; border-radius: 4px; color: #999; font-size: 12px; padding: 20px 10px;"">IMG</div>
+                            <img src=""{imageUrl}"" alt=""{item.Variant?.Product?.ProductName ?? "Sản phẩm"}"" style=""width: 70px; height: 70px; border-radius: 4px; object-fit: cover; border: 1px solid #ddd;"" />
                             <div style=""flex: 1; padding-left: 15px;"">
                                 <div style=""font-weight: bold; margin-bottom: 5px; color: #333; font-size: 16px;"">{item.Variant?.Product?.ProductName ?? "Sản phẩm"}</div>
                                 <div style=""color: #666; font-size: 14px;"">Kích thước: {item.Variant?.Size?.Name ?? "N/A"} | Màu: {item.Variant?.Color?.Name ?? "N/A"} | Số lượng: {item.Quantity}</div>
