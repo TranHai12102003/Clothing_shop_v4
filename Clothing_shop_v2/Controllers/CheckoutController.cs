@@ -80,40 +80,97 @@ namespace Clothing_shop_v2.Controllers
         //}
         public async Task<IActionResult> Index()
         {
+            List<CartGetVModel> cartItems;
+            User userProfile = null;
+            var model = new CheckoutVModel();
+
             if (!User.Identity.IsAuthenticated)
             {
-                TempData["ErrorMessage"] = "Vui lòng đăng nhập để tiếp tục thanh toán.";
-                return RedirectToAction("Login", "Home");
+                // Người dùng chưa đăng nhập: Lấy giỏ hàng từ cookie
+                var cartCookie = Request.Cookies["Cart"];
+                var cartSession = string.IsNullOrEmpty(cartCookie)
+                    ? new List<CartCreateVModel>()
+                    : JsonSerializer.Deserialize<List<CartCreateVModel>>(cartCookie) ?? new List<CartCreateVModel>();
+
+                if (cartSession.Any())
+                {
+                    var variantIds = cartSession.Select(c => c.VariantId).ToList();
+                    var variants = await _context.Variants
+                        .Where(v => variantIds.Contains(v.Id))
+                        .Include(v => v.Product)
+                            .ThenInclude(p => p.ProductImages)
+                        .Include(v => v.Size)
+                        .Include(v => v.Color)
+                        .ToListAsync();
+
+                    cartItems = variants.Select(v => new CartGetVModel
+                    {
+                        Id = 0, // Guest cart không có ID trong database
+                        VariantId = v.Id,
+                        UserId = 0, // Guest user
+                        Quantity = cartSession.FirstOrDefault(c => c.VariantId == v.Id)?.Quantity ?? 0,
+                        TotalPrice = v.Price * (cartSession.FirstOrDefault(c => c.VariantId == v.Id)?.Quantity ?? 0),
+                        Variant = VariantMapping.EntityGetVModel(v)
+                    }).ToList();
+                }
+                else
+                {
+                    cartItems = new List<CartGetVModel>();
+                }
+
+                // Kiểm tra giỏ hàng có trống không
+                if (!cartItems.Any())
+                {
+                    TempData["ErrorMessage"] = "Giỏ hàng của bạn đang trống. Vui lòng thêm sản phẩm trước khi thanh toán.";
+                    return RedirectToAction("Index", "Cart");
+                }
+
+                ViewBag.CartCount = cartSession.Count;
+                // Model trống cho guest user (họ sẽ phải nhập thông tin)
+            }
+            else
+            {
+                // Người dùng đã đăng nhập
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                cartItems = await _cartService.GetAll(userId) ?? new List<CartGetVModel>();
+
+                // Kiểm tra giỏ hàng có trống không
+                if (!cartItems.Any())
+                {
+                    TempData["ErrorMessage"] = "Giỏ hàng của bạn đang trống. Vui lòng thêm sản phẩm trước khi thanh toán.";
+                    return RedirectToAction("Index", "Cart");
+                }
+
+                ViewBag.CartCount = cartItems.Count;
+                userProfile = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (userProfile == null)
+                {
+                    TempData["WarningMessage"] = "Không tìm thấy thông tin hồ sơ người dùng.";
+                }
+
+                // Điền sẵn thông tin cho user đã đăng nhập
+                model = new CheckoutVModel
+                {
+                    FullName = userProfile?.FullName ?? "",
+                    Email = userProfile?.Email,
+                    PhoneNumber = userProfile?.PhoneNumber,
+                    Address = userProfile?.Address,
+                    ShippingFullName = userProfile?.FullName ?? "",
+                    ShippingEmail = userProfile?.Email,
+                    ShippingPhoneNumber = userProfile?.PhoneNumber,
+                    ShippingAddress = userProfile?.Address,
+                };
             }
 
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            var cartItems = await _cartService.GetAll(userId) ?? new List<CartGetVModel>();
-            ViewBag.CartCount = cartItems.Count;
-
-            var userProfile = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-            if (userProfile == null)
-            {
-                TempData["WarningMessage"] = "Không tìm thấy thông tin hồ sơ người dùng.";
-            }
-
-            var model = new CheckoutVModel
-            {
-                FullName = userProfile != null ? $"{userProfile.FullName}":"",
-                Email = userProfile?.Email,
-                PhoneNumber = userProfile?.PhoneNumber,
-                Address = userProfile?.Address,
-                ShippingFullName = userProfile != null ? $"{userProfile.FullName}" : "",
-                ShippingEmail = userProfile?.Email,
-                ShippingPhoneNumber = userProfile?.PhoneNumber,
-                ShippingAddress = userProfile?.Address,
-            };
-
+            // Set ViewBag data chung cho cả 2 trường hợp
             ViewBag.Categories = await _context.Categories
                 .Where(c => c.IsActive == true)
                 .Select(c => CategoryMapping.EntityToVModel(c))
                 .ToListAsync();
             ViewBag.CartItems = cartItems;
-            ViewBag.UserProfile = userProfile;
+            ViewBag.UserProfile = userProfile; // null cho guest, có giá trị cho user đã đăng nhập
+            ViewBag.IsAuthenticated = User.Identity.IsAuthenticated;
 
             return View(model);
         }
@@ -121,45 +178,96 @@ namespace Clothing_shop_v2.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PlaceOrder(CheckoutVModel model)
         {
-            if (!User.Identity.IsAuthenticated)
+            List<CartGetVModel> cartItems;
+            int? userId = null;
+
+            // Xác định userId và lấy giỏ hàng
+            if (User.Identity.IsAuthenticated)
             {
-                TempData["ErrorMessage"] = "Vui lòng đăng nhập để đặt hàng.";
-                return RedirectToAction("Login", "Home");
+                userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                cartItems = await _cartService.GetAll(userId.Value) ?? new List<CartGetVModel>();
+            }
+            else
+            {
+                // Guest user - lấy giỏ hàng từ cookie
+                var cartCookie = Request.Cookies["Cart"];
+                var cartSession = string.IsNullOrEmpty(cartCookie)
+                    ? new List<CartCreateVModel>()
+                    : JsonSerializer.Deserialize<List<CartCreateVModel>>(cartCookie) ?? new List<CartCreateVModel>();
+
+                if (cartSession.Any())
+                {
+                    var variantIds = cartSession.Select(c => c.VariantId).ToList();
+                    var variants = await _context.Variants
+                        .Where(v => variantIds.Contains(v.Id))
+                        .Include(v => v.Product)
+                            .ThenInclude(p => p.ProductImages)
+                        .Include(v => v.Size)
+                        .Include(v => v.Color)
+                        .ToListAsync();
+
+                    cartItems = variants.Select(v => new CartGetVModel
+                    {
+                        Id = 0,
+                        VariantId = v.Id,
+                        UserId = 0,
+                        Quantity = cartSession.FirstOrDefault(c => c.VariantId == v.Id)?.Quantity ?? 0,
+                        TotalPrice = v.Price * (cartSession.FirstOrDefault(c => c.VariantId == v.Id)?.Quantity ?? 0),
+                        Variant = VariantMapping.EntityGetVModel(v)
+                    }).ToList();
+                }
+                else
+                {
+                    cartItems = new List<CartGetVModel>();
+                }
             }
 
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            // Kiểm tra giỏ hàng có trống không
+            if (!cartItems.Any())
+            {
+                TempData["ErrorMessage"] = "Giỏ hàng của bạn đang trống. Vui lòng thêm sản phẩm trước khi thanh toán.";
+                return RedirectToAction("Index", "Cart");
+            }
 
+            // Validate model
             if (!ModelState.IsValid)
             {
                 TempData["ErrorMessage"] = "Vui lòng điền đầy đủ các thông tin bắt buộc.";
-                var carts = await _cartService.GetAll(userId) ?? new List<CartGetVModel>();
-                ViewBag.CartItems = carts;
-                ViewBag.Categories = await _context.Categories
-                    .Where(c => c.IsActive == true)
-                    .Select(c => CategoryMapping.EntityToVModel(c))
-                    .ToListAsync();
-                ViewBag.UserProfile = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-                return View("Index", model);
-            }
 
-            var cartItems = await _cartService.GetAll(userId) ?? new List<CartGetVModel>();
-            if (!cartItems.Any())
-            {
-                TempData["ErrorMessage"] = "Giỏ hàng của bạn đang trống.";
+                // Prepare ViewBag for return view
                 ViewBag.CartItems = cartItems;
                 ViewBag.Categories = await _context.Categories
                     .Where(c => c.IsActive == true)
                     .Select(c => CategoryMapping.EntityToVModel(c))
                     .ToListAsync();
-                ViewBag.UserProfile = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                ViewBag.UserProfile = userId.HasValue ?
+                    await _context.Users.FirstOrDefaultAsync(u => u.Id == userId.Value) : null;
+                ViewBag.IsAuthenticated = User.Identity.IsAuthenticated;
+
                 return View("Index", model);
             }
 
-            var shippingAddress = model.ShipToDifferentAddress ? model.ShippingAddress : model.Address;
+            //// Tính địa chỉ giao hàng
+            //var shippingAddress = model.ShipToDifferentAddress ? model.ShippingAddress : model.Address;
+            string shippingAddress;
+            if (User.Identity.IsAuthenticated)
+            {
+                // User đã đăng nhập: có thể chọn địa chỉ khác
+                shippingAddress = model.ShipToDifferentAddress ? model.ShippingAddress : model.Address;
+            }
+            else
+            {
+                // Guest user: chỉ có 1 địa chỉ
+                shippingAddress = model.Address;
+            }
 
+            // Tạo đơn hàng với thông tin phù hợp cho cả guest và user đã đăng nhập
             var orderVModel = new OrderCreateVModel
             {
-                UserId = userId,
+                UserId = userId, // null cho guest user
+                GuestFullName = !User.Identity.IsAuthenticated ? model.FullName : null,
+                GuestEmail = !User.Identity.IsAuthenticated ? model.Email : null,
+                GuestPhoneNumber = !User.Identity.IsAuthenticated ? model.PhoneNumber : null,
                 OrderDate = DateTime.Now,
                 TotalAmount = cartItems.Sum(item => item.TotalPrice) + 10, // Phí vận chuyển $10
                 Status = "Pending",
@@ -169,16 +277,22 @@ namespace Clothing_shop_v2.Controllers
                 IsActive = true
             };
 
+            // Tạo đơn hàng
             var response = await _orderService.Create(orderVModel);
             if (response is ErrorResponseResult errorResponse)
             {
                 TempData["ErrorMessage"] = errorResponse.Message;
+
+                // Prepare ViewBag for return view
                 ViewBag.CartItems = cartItems;
                 ViewBag.Categories = await _context.Categories
                     .Where(c => c.IsActive == true)
                     .Select(c => CategoryMapping.EntityToVModel(c))
                     .ToListAsync();
-                ViewBag.UserProfile = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                ViewBag.UserProfile = userId.HasValue ?
+                    await _context.Users.FirstOrDefaultAsync(u => u.Id == userId.Value) : null;
+                ViewBag.IsAuthenticated = User.Identity.IsAuthenticated;
+
                 return View("Index", model);
             }
 
@@ -186,6 +300,7 @@ namespace Clothing_shop_v2.Controllers
             var order = (Order)successResponse.Data;
             int orderId = order.Id;
 
+            // Tạo order details
             var orderDetails = cartItems.Select(item => new OrderDetail
             {
                 OrderId = orderId,
@@ -197,8 +312,10 @@ namespace Clothing_shop_v2.Controllers
             _context.OrderDetails.AddRange(orderDetails);
             await _context.SaveChangesAsync();
 
-            // Xử lý thanh toán VNPay
-            if (model.PaymentMethod == "VNPay") // Ở đây sử dụng "Paypal" để đại diện cho VNPay
+            // Xử lý thanh toán
+            Payment payment = null;
+
+            if (model.PaymentMethod == "VNPay")
             {
                 var paymentVModel = new PaymentCreateVModel
                 {
@@ -210,7 +327,7 @@ namespace Clothing_shop_v2.Controllers
                     IsActive = true
                 };
 
-                var payment = PaymentMapping.VModelToEntity(paymentVModel);
+                payment = PaymentMapping.VModelToEntity(paymentVModel);
                 _context.Payments.Add(payment);
                 await _context.SaveChangesAsync();
 
@@ -219,13 +336,16 @@ namespace Clothing_shop_v2.Controllers
                 _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
 
+                // Xóa giỏ hàng trước khi chuyển hướng đến VNPay
+                await ClearCart(userId);
+
                 // Tạo URL thanh toán VNPay
                 var paymentUrl = _vnPayService.CreatePaymentUrl(order, HttpContext);
                 return Redirect(paymentUrl);
             }
-            if(model.PaymentMethod == "COD")
+            else if (model.PaymentMethod == "COD")
             {
-                var payment = new Payment
+                payment = new Payment
                 {
                     PaymentGateway = "COD",
                     Amount = order.TotalAmount,
@@ -234,23 +354,70 @@ namespace Clothing_shop_v2.Controllers
                     PaymentDate = DateTime.Now,
                     IsActive = true
                 };
+
                 _context.Payments.Add(payment);
                 await _context.SaveChangesAsync();
+
                 // Cập nhật PaymentId cho Order
                 order.PaymentId = payment.Id;
-                order.Status = "Pending"; // Trạng thái đơn hàng khi thanh toán COD
+                order.Status = "Pending";
                 _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
             }
 
-            // Xóa giỏ hàng sau khi thanh toán
-            var cartItemsToDelete = await _context.Carts.Where(c => c.UserId == userId).ToListAsync();
-            _context.Carts.RemoveRange(cartItemsToDelete);
-            await _context.SaveChangesAsync();
+            // Xóa giỏ hàng sau khi đặt hàng thành công
+            await ClearCart(userId);
 
             TempData["SuccessMessage"] = "Đặt hàng thành công!";
             //return RedirectToAction("OrderConfirmation", new { orderId });
             return RedirectToAction("Index", "Cart");
+        }
+
+        // Helper method để xóa giỏ hàng
+        private async Task ClearCart(int? userId)
+        {
+            if (userId.HasValue)
+            {
+                // Xóa giỏ hàng từ database cho user đã đăng nhập
+                var cartItemsToDelete = await _context.Carts.Where(c => c.UserId == userId.Value).ToListAsync();
+                _context.Carts.RemoveRange(cartItemsToDelete);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                // Xóa giỏ hàng từ cookie cho guest user
+                Response.Cookies.Delete("Cart");
+            }
+        }
+
+        // Helper method để tạo tài khoản cho guest user (optional)
+        private async Task CreateGuestAccount(CheckoutVModel model)
+        {
+            // Logic tạo tài khoản từ thông tin guest
+            // Bạn có thể implement logic này tùy theo yêu cầu
+            try
+            {
+                var newUser = new User
+                {
+                    FullName = model.FullName,
+                    Email = model.Email,
+                    PhoneNumber = model.PhoneNumber,
+                    Address = model.Address,
+                    // Set other required fields
+                    IsActive = true,
+                    CreatedDate = DateTime.Now
+                };
+
+                _context.Users.Add(newUser);
+                await _context.SaveChangesAsync();
+
+                TempData["InfoMessage"] = "Tài khoản của bạn đã được tạo thành công!";
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the order process
+                TempData["WarningMessage"] = "Đặt hàng thành công nhưng không thể tạo tài khoản. Vui lòng đăng ký thủ công.";
+            }
         }
 
         [HttpGet]
