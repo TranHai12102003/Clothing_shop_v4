@@ -24,10 +24,10 @@ namespace Clothing_shop_v2.VModels
 
         public bool ShipToDifferentAddress { get; set; }
 
-        public string ShippingFullName { get; set; }
-        public string ShippingEmail { get; set; }
-        public string ShippingPhoneNumber { get; set; }
-        public string ShippingAddress { get; set; }
+        public string? ShippingFullName { get; set; }
+        public string? ShippingEmail { get; set; }
+        public string? ShippingPhoneNumber { get; set; }
+        public string? ShippingAddress { get; set; }
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (ShipToDifferentAddress)
