@@ -74,20 +74,20 @@
                 $('#selected-color').val(selectedColorId);
             });
 
-            // $('.btn-plus').click(function () {
-            //     var input = $('#quantity');
-            //     var value = parseInt(input.val()) || 1 ;
-            //     input.val(value);
-            //     $('#selected-quantity').val(value);
-            // });
-            // $('.btn-minus').click(function () {
-            //     var input = $('#quantity');
-            //     var value = parseInt(input.val()) || 1;
-            //     if (value > 1) {
-            //         input.val(value);
-            //         $('#selected-quantity').val(value);
-            //     }
-            // });
+            $('.btn-plus').click(function () {
+                var input = $('#quantity');
+                var value = parseInt(input.val()) || 1 ;
+                input.val(value);
+                $('#selected-quantity').val(value);
+            });
+            $('.btn-minus').click(function () {
+                var input = $('#quantity');
+                var value = parseInt(input.val()) || 1;
+                if (value > 1) {
+                    input.val(value);
+                    $('#selected-quantity').val(value);
+                }
+            });
 
             if ($('.size-radio').length > 0) {
                 $('.size-radio:first').prop('checked', true).trigger('change');
