@@ -375,11 +375,9 @@ namespace Clothing_shop_v2.Controllers
                 await _context.SaveChangesAsync();
                 // Send order confirmation email
                 await SendOrderConfirmationEmail(order, cartItems, model);
+                // Xóa giỏ hàng sau khi đặt hàng thành công
+                await ClearCart(userId);
             }
-
-            // Xóa giỏ hàng sau khi đặt hàng thành công
-            await ClearCart(userId);
-
             TempData["SuccessMessage"] = "Đặt hàng thành công!";
             //return RedirectToAction("OrderConfirmation", new { orderId });
             return RedirectToAction("Index", "Cart");
@@ -456,13 +454,7 @@ namespace Clothing_shop_v2.Controllers
                     if (response.VnPayResponseCode == "00")
                     {
                         var userId = order.UserId; // Lấy UserId từ Order
-                        var cartItems = await _context.Carts
-                            .Where(c => c.UserId == userId)
-                            .ToListAsync();
-                        if (cartItems.Any())
-                        {
-                            _context.Carts.RemoveRange(cartItems);
-                        }
+                        await ClearCart(userId);
                         // Lấy cartItems để gửi email
                         var orderDetails = await _context.OrderDetails
                             .Where(od => od.OrderId == order.Id)
