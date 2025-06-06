@@ -40,7 +40,7 @@ namespace Clothing_shop_v2.Controllers
             _orderService = orderService;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             var model = new HomeVModel
             {
@@ -72,6 +72,23 @@ namespace Clothing_shop_v2.Controllers
                         IsActive = b.IsActive,
                     }).ToList(),
             };
+            int cartCount = 0;
+            if (User.Identity.IsAuthenticated)
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                cartCount = await _context.Carts
+                    .Where(c => c.UserId == int.Parse(userId) && c.IsActive == true)
+                    .CountAsync();
+                ViewBag.CartCount = cartCount;
+            }
+            else
+            {
+                var cartCookie = Request.Cookies["Cart"];
+                var cartSession = string.IsNullOrEmpty(cartCookie)
+                    ? new List<CartCreateVModel>()
+                    : JsonSerializer.Deserialize<List<CartCreateVModel>>(cartCookie) ?? new List<CartCreateVModel>();
+                ViewBag.CartCount = cartSession.Count();
+            }
             return View(model);
         }
         [HttpGet]
@@ -80,6 +97,23 @@ namespace Clothing_shop_v2.Controllers
             ViewBag.Categories = _context.Categories
             .Include(c => c.ParentCategory)
             .Select(c => CategoryMapping.EntityToVModel(c)).ToList();
+            int cartCount = 0;
+            if (User.Identity.IsAuthenticated)
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                cartCount = _context.Carts
+                    .Where(c => c.UserId == int.Parse(userId) && c.IsActive == true)
+                    .Count();
+                ViewBag.CartCount = cartCount;
+            }
+            else
+            {
+                var cartCookie = Request.Cookies["Cart"];
+                var cartSession = string.IsNullOrEmpty(cartCookie)
+                    ? new List<CartCreateVModel>()
+                    : JsonSerializer.Deserialize<List<CartCreateVModel>>(cartCookie) ?? new List<CartCreateVModel>();
+                ViewBag.CartCount = cartSession.Count();
+            }
             return View(new RegisterVModel());
         }
         [HttpPost]
@@ -132,6 +166,23 @@ namespace Clothing_shop_v2.Controllers
             .Include(c => c.ParentCategory)
             .Select(c => CategoryMapping.EntityToVModel(c))
             .ToList();
+            int cartCount = 0;
+            if (User.Identity.IsAuthenticated)
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                cartCount = _context.Carts
+                    .Where(c => c.UserId == int.Parse(userId) && c.IsActive == true)
+                    .Count();
+                ViewBag.CartCount = cartCount;
+            }
+            else
+            {
+                var cartCookie = Request.Cookies["Cart"];
+                var cartSession = string.IsNullOrEmpty(cartCookie)
+                    ? new List<CartCreateVModel>()
+                    : JsonSerializer.Deserialize<List<CartCreateVModel>>(cartCookie) ?? new List<CartCreateVModel>();
+                ViewBag.CartCount = cartSession.Count();
+            }
             return View(new LoginVModel());
         }
         [HttpPost]
@@ -249,6 +300,10 @@ namespace Clothing_shop_v2.Controllers
                 .Where(c => c.IsActive == true)
                 .Select(c => CategoryMapping.EntityToVModel(c)).ToListAsync();
             ViewBag.UserInfo = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var cartCount = await _context.Carts
+                    .Where(c => c.UserId == userId && c.IsActive == true)
+                    .CountAsync();
+                ViewBag.CartCount = cartCount;
             return View(result.Value);
         }
 

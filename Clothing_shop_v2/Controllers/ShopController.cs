@@ -1,4 +1,6 @@
 ﻿using System.Globalization;
+using System.Security.Claims;
+using System.Text.Json;
 using Clothing_shop_v2.Common.Constants;
 using Clothing_shop_v2.Common.Models;
 using Clothing_shop_v2.Mappings;
@@ -62,6 +64,23 @@ namespace Clothing_shop_v2.Controllers
                 Colors = colors,
                 Sizes = sizes,
             };
+            int cartCount = 0;
+            if (User.Identity.IsAuthenticated)
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                cartCount = await _context.Carts
+                    .Where(c => c.UserId == int.Parse(userId) && c.IsActive == true)
+                    .CountAsync();
+                ViewBag.CartCount = cartCount;
+            }
+            else
+            {
+                var cartCookie = Request.Cookies["Cart"];
+                var cartSession = string.IsNullOrEmpty(cartCookie)
+                    ? new List<CartCreateVModel>()
+                    : JsonSerializer.Deserialize<List<CartCreateVModel>>(cartCookie) ?? new List<CartCreateVModel>();
+                ViewBag.CartCount = cartSession.Count();
+            }
 
             return View(model);
         }
