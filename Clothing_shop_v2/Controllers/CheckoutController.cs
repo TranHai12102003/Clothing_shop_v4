@@ -457,6 +457,39 @@ namespace Clothing_shop_v2.Controllers
                         {
                             _context.Carts.RemoveRange(cartItems);
                         }
+                        // Lấy cartItems để gửi email
+                        var orderDetails = await _context.OrderDetails
+                            .Where(od => od.OrderId == order.Id)
+                            .Include(od => od.Variant)
+                                .ThenInclude(v => v.Product)
+                                    .ThenInclude(p => p.ProductImages)
+                                .Include(od => od.Variant.Size)
+                                .Include(od => od.Variant.Color)
+                            .ToListAsync();
+
+                        var cartItemsForEmail = orderDetails.Select(od => new CartGetVModel
+                        {
+                            VariantId = od.VariantId,
+                            Quantity = od.Quantity,
+                            TotalPrice = od.UnitPrice * od.Quantity,
+                            Variant = VariantMapping.EntityGetVModel(od.Variant)
+                        }).ToList();
+
+                        // Tạo model để gửi email
+                        var checkoutModel = new CheckoutVModel
+                        {
+                            FullName = order.GuestFullName ?? (await _context.Users.FirstOrDefaultAsync(u => u.Id == order.UserId))?.FullName,
+                            Email = order.GuestEmail ?? (await _context.Users.FirstOrDefaultAsync(u => u.Id == order.UserId))?.Email,
+                            PhoneNumber = order.GuestPhoneNumber ?? (await _context.Users.FirstOrDefaultAsync(u => u.Id == order.UserId))?.PhoneNumber,
+                            Address = order.ShippingAddress,
+                            ShippingFullName = order.GuestFullName ?? (await _context.Users.FirstOrDefaultAsync(u => u.Id == order.UserId))?.FullName,
+                            ShippingEmail = order.GuestEmail ?? (await _context.Users.FirstOrDefaultAsync(u => u.Id == order.UserId))?.Email,
+                            ShippingPhoneNumber = order.GuestPhoneNumber ?? (await _context.Users.FirstOrDefaultAsync(u => u.Id == order.UserId))?.PhoneNumber,
+                            ShippingAddress = order.ShippingAddress
+                        };
+
+                        // Gửi email xác nhận
+                        await SendOrderConfirmationEmail(order, cartItemsForEmail, checkoutModel);
                     }
 
                     await _context.SaveChangesAsync();
