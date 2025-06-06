@@ -87,10 +87,10 @@
                 </form>
             </div>
             <div class="col-lg-3 col-6 text-right">
-                <a asp-controller="Wishlist" asp-action="Index" class="btn border">
+@*                 <a asp-controller="Wishlist" asp-action="Index" class="btn border">
                     <i class="fas fa-heart text-primary"></i>
                     <span class="badge">0</span>
-                </a>
+                </a> *@
                 <a asp-controller="Cart" asp-action="Index" class="btn border">
                     <i class="fas fa-shopping-cart text-primary"></i>
                     <span class="badge">@ViewBag.CartCount</span>
@@ -154,7 +154,7 @@
                     <div class="collapse navbar-collapse justify-content-between" id="navbarCollapse">
                         <div class="navbar-nav mr-auto py-0">
                             <a asp-controller="Home" asp-action="Index" class="nav-item nav-link">Trang chủ</a>
-                            <a asp-controller="Shop" asp-action="Index" class="nav-item nav-link">Cửa hàng</a>
+                            <a asp-controller="Shop" asp-action="Index" class="nav-item nav-link">Sản phẩm</a>
                             <a asp-controller="Shop" asp-action="Detail" class="nav-item nav-link">Chi tiết sản phẩm</a>
                             <div class="nav-item dropdown">
                                 <a href="#" class="nav-link dropdown-toggle active" data-toggle="dropdown">Trang</a>

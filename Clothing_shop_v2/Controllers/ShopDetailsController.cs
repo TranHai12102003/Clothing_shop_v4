@@ -1,4 +1,6 @@
-﻿using Clothing_shop_v2.Mappings;
+﻿using System.Security.Claims;
+using System.Text.Json;
+using Clothing_shop_v2.Mappings;
 using Clothing_shop_v2.Models;
 using Clothing_shop_v2.Services.ISerivce;
 using Clothing_shop_v2.VModels;
@@ -37,6 +39,23 @@ namespace Clothing_shop_v2.Controllers
             else
             {
                 ViewBag.RelatedProducts = relatedProducts;
+            }
+            int cartCount = 0;
+            if (User.Identity.IsAuthenticated)
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                cartCount = await _context.Carts
+                    .Where(c => c.UserId ==  int.Parse(userId) && c.IsActive == true)
+                    .CountAsync();
+                ViewBag.CartCount = cartCount;
+            }
+            else
+            {
+                var cartCookie = Request.Cookies["Cart"];
+                var cartSession = string.IsNullOrEmpty(cartCookie)
+                    ? new List<CartCreateVModel>()
+                    : JsonSerializer.Deserialize<List<CartCreateVModel>>(cartCookie) ?? new List<CartCreateVModel>();
+                ViewBag.CartCount = cartSession.Count();
             }
             return View(product.Value);
         }
