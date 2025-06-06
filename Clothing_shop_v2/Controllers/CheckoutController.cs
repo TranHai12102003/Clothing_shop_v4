@@ -231,6 +231,17 @@ namespace Clothing_shop_v2.Controllers
                 return RedirectToAction("Index", "Cart");
             }
 
+            // Kiểm tra số lượng tồn kho
+            foreach (var item in cartItems)
+            {
+                var variant = await _context.Variants.FindAsync(item.VariantId);
+                if (variant == null || variant.QuantityInStock < item.Quantity)
+                {
+                    TempData["ErrorMessage"] = $"Sản phẩm {item.Variant?.Product?.ProductName} không đủ số lượng tồn kho.";
+                    return RedirectToAction("Index", "Cart");
+                }
+            }
+
             // Validate model
             if (!ModelState.IsValid)
             {
@@ -338,9 +349,6 @@ namespace Clothing_shop_v2.Controllers
                 _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
 
-                // Xóa giỏ hàng trước khi chuyển hướng đến VNPay
-                await ClearCart(userId);
-
                 // Tạo URL thanh toán VNPay
                 var paymentUrl = _vnPayService.CreatePaymentUrl(order, HttpContext);
                 return Redirect(paymentUrl);
@@ -397,8 +405,6 @@ namespace Clothing_shop_v2.Controllers
         // Helper method để tạo tài khoản cho guest user (optional)
         private async Task CreateGuestAccount(CheckoutVModel model)
         {
-            // Logic tạo tài khoản từ thông tin guest
-            // Bạn có thể implement logic này tùy theo yêu cầu
             try
             {
                 var newUser = new User
@@ -442,7 +448,7 @@ namespace Clothing_shop_v2.Controllers
                 {
                     order.Payment.PaymentStatus = response.VnPayResponseCode == "00" ? "Completed" : "Failed";
                     order.Payment.TransactionId = response.TransactionId;
-                    order.Status = response.VnPayResponseCode == "00" ? "Confirmed" : "Pending";
+                    order.Status = response.VnPayResponseCode == "00" ? "Confirmed" : "Cancelled";
                     _context.Update(order.Payment);
                     _context.Update(order);
 
